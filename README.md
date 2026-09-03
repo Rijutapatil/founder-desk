@@ -456,7 +456,7 @@ serving/     CLI and FastAPI service
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-118 tests · `ruff` · `mypy --strict`
+120 tests · `ruff` · `mypy --strict`
 
 ## Licence
 
