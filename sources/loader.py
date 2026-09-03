@@ -36,6 +36,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from agent.schema import AuthorityTier, Domain, EntityType
 
 DEFAULT_ALLOWLIST = Path(__file__).parent / "sources.yaml"
+CERT_DIR = Path(__file__).parent / "certs"
 
 # Hosts whose content is a government publication. ``rbi.org.in`` is the one
 # non-.gov.in entry and it is deliberate: the Reserve Bank publishes its master
@@ -92,6 +93,13 @@ class SourceEntry(BaseModel):
     entity_types: tuple[EntityType, ...] = ()
 
     fetch_status: FetchStatus = FetchStatus.OK
+    ca_bundle: str | None = Field(
+        default=None,
+        description=(
+            "Filename under sources/certs/ holding an intermediate certificate this host "
+            "fails to send. Completes the chain; never disables verification."
+        ),
+    )
     license_verified: bool = Field(
         default=False,
         description="Whether a human has actually read this portal's terms. False is honest.",
@@ -102,6 +110,12 @@ class SourceEntry(BaseModel):
         description="Further URLs under this entry - e.g. the PDFs a landing page links to.",
     )
     notes: str = ""
+
+    @model_validator(mode="after")
+    def _ca_bundle_must_exist(self) -> SourceEntry:
+        if self.ca_bundle is not None and not self.ca_bundle_path.exists():  # type: ignore[union-attr]
+            raise ValueError(f"{self.id}: ca_bundle {self.ca_bundle!r} not found in {CERT_DIR}")
+        return self
 
     @model_validator(mode="after")
     def _must_be_official(self) -> SourceEntry:
@@ -116,6 +130,25 @@ class SourceEntry(BaseModel):
                     "Commentary, news and professional-firm content are out of scope by design."
                 )
         return self
+
+    @property
+    def ca_bundle_path(self) -> Path | None:
+        """Absolute path to this entry's extra CA certificate, if it needs one.
+
+        Some government hosts are misconfigured: they serve only their leaf
+        certificate and omit the intermediate, so the chain cannot be built from
+        a normal trust store. ESIC does this.
+
+        The fix is to supply the missing intermediate, **not** to turn
+        verification off. Validation still terminates at a root already trusted
+        by certifi, so a tampered response is still rejected - which matters
+        more here than anywhere, because this text gets quoted as law. The
+        certificate is committed and its fingerprint pinned by a test, so a
+        substituted one fails the build rather than passing silently.
+        """
+        if self.ca_bundle is None:
+            return None
+        return CERT_DIR / self.ca_bundle
 
     def covers(self, url: str) -> bool:
         return url == self.url or any(url.startswith(p) for p in self.url_prefixes)

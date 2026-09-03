@@ -115,8 +115,8 @@ system should be auditable on it:
 
 | tier | what it is | in this corpus |
 |---|---|---|
-| 1 | statute and rules | 69 spans |
-| 2 | notifications, circulars, RBI master directions | 1 span |
+| 1 | statute and rules | 70 spans |
+| 2 | notifications, circulars, RBI master directions | 2 spans |
 | 3 | official guidance — portal FAQs, department help pages | 471 spans |
 
 The tier-3 skew is honest and is the single biggest weakness of the current
@@ -132,15 +132,15 @@ implying diligence that has not happened.
 
 ## The corpus
 
-541 spans, 298,628 characters, from 13 of 17 allowlisted sources.
+543 spans, 300,181 characters, from 14 of 18 allowlisted sources.
 
 | domain | spans | note |
 |---|---|---|
-| gst | 319 | CBIC FAQs + GST portal help |
-| labour | 191 | EPF & MP Act 1952, EPFO FAQs |
+| gst | 321 | CBIC FAQs + GST portal help |
+| labour | 182 | EPF & MP Act 1952, EPFO FAQs, ESI Acts |
 | startup_india | 36 | DPIIT recognition, self-certification |
 | tax_registration | 4 | Income Tax portal only |
-| banking_fema | 1 | RBI master directions index only |
+| banking_fema | 2 | RBI master directions index only |
 | **incorporation** | **0** | **see below** |
 
 ### What could not be collected, and why
@@ -152,18 +152,40 @@ This is the part most likely to be quietly omitted, so it is stated first.
 | MCA portal | HTTP 403 to any non-browser client |
 | India Code (Companies Act 2013) | HTTP 403 to any non-browser client |
 | Ministry of Labour | HTTP 403 to any non-browser client |
-| ESIC | TLS failure — incomplete certificate chain |
+| NSWS | reachable, but client-rendered — 29 characters of server HTML |
 
-**Incorporation has zero coverage as a result.** SPICe+, INC-20A, ROC filing
-deadlines and director requirements are all unanswerable, and the system refuses
-them. They stay listed in the allowlist rather than being deleted, so the gap
-shows up in the coverage report instead of disappearing.
+**Incorporation still has zero coverage.** SPICe+, INC-20A, ROC filing deadlines
+and director requirements are unanswerable, and the system refuses them. All four
+stay listed in the allowlist rather than being deleted, so the gap shows up in
+the coverage report instead of disappearing.
 
-Two things were *not* done to get around this. A browser User-Agent was not
-spoofed, because these services have said no in the way a service says no. And
-certificate verification was not disabled for ESIC, because a tampered response
-would then be indistinguishable from a real one — an unacceptable trade for text
-the system quotes as law.
+NSWS is the near miss worth recording: it is an official portal carrying a
+Ministry of Corporate Affairs page for incorporation of a company, it returns
+HTTP 200, and it is useless to a static fetcher because the page is built in the
+browser. Collecting it needs a headless browser in the ingest path — a different
+collection mechanism, not a different URL. That is the most promising remaining
+route to closing this gap.
+
+A browser User-Agent is not spoofed for the three that return 403. These are
+public services that have said no in the way a service says no.
+
+### ESIC: fixed properly rather than worked around
+
+ESIC was in the blocked list too. Its server sends only its leaf certificate and
+omits the intermediate, so the chain cannot be built from a normal trust store.
+
+Disabling certificate verification would have collected it in one line, and is
+refused: a tampered response would then be indistinguishable from a real one,
+which is an unacceptable trade for text this system quotes as law. Instead the
+missing GlobalSign intermediate is committed under `sources/certs/` and supplied
+explicitly. Validation still terminates at *GlobalSign Root CA - R6*, already in
+certifi — a link was added to the chain, not removed from it.
+
+Tests pin the certificate's SHA-256 fingerprint, assert it is an intermediate
+rather than self-signed (a self-signed pin would be trust-on-first-use, not
+verification), fail 90 days before it expires so rotation is scheduled rather
+than discovered, and walk the AST of every ingest module to prove `verify=False`
+appears nowhere.
 
 ### Collection etiquette
 
@@ -410,19 +432,20 @@ serving/     CLI and FastAPI service
 | area | state |
 |---|---|
 | Allowlist + licence/host enforcement | ✅ measured |
-| Ingestion, 13 sources, 541 spans | ✅ measured |
+| Ingestion, 14 sources, 543 spans | ✅ measured |
 | Freshness ledger + weekly CI job | ✅ built; no upstream change observed yet |
 | Hybrid retrieval | ✅ measured |
 | Cross-encoder reranking | ✅ measured (opt-in) |
 | Router, refusal, clarify, judgement guard | ✅ measured |
 | Evaluation + CI gate | ✅ measured |
-| Incorporation domain | ❌ **no coverage** — sources blocked |
+| ESIC via pinned intermediate certificate | ✅ measured |
+| Incorporation domain | ❌ **no coverage** — MCA/India Code block bots, NSWS is client-rendered |
 | Model-backed synthesis (`agent/llm.py`) | ⚠️ protocol + offline stub only; **never run against a live model** |
 
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-112 tests · `ruff` · `mypy --strict`
+118 tests · `ruff` · `mypy --strict`
 
 ## Licence
 

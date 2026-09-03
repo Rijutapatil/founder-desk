@@ -106,15 +106,16 @@ sources:
     license: "ESIC website content - Government of India; terms not yet read in full"
     license_verified: false
     refresh_days: 365
-    fetch_status: blocked
+    ca_bundle: globalsign-gcc-r6-alphassl-ca-2025.pem
     notes: >-
-      TLS failure, not a 403: esic.gov.in serves an incomplete certificate chain
-      ("unable to get local issuer certificate", checked 2026-09-04). Disabling
-      certificate verification would collect it, and is refused deliberately -
-      turning off TLS validation to ingest legal text is precisely the wrong
-      trade, since a tampered response would be indistinguishable from a real
-      one. Blocked until the chain is fixed upstream or an intermediate bundle
-      is pinned explicitly.
+      esic.gov.in serves only its leaf certificate and omits the intermediate,
+      so the chain cannot be built from a normal trust store ("unable to get
+      local issuer certificate"). Rather than disable verification, the missing
+      GlobalSign intermediate is committed under sources/certs/ and supplied
+      explicitly; validation still terminates at GlobalSign Root CA - R6, which
+      is already in certifi. Verified 2026-09-04: return code 0. The pinned
+      certificate expires 2027-05-21 and a test fails once it is within 90 days
+      of that.
 
   # ------------------------------------------------------ STARTUP INDIA
   - id: startupindia-recognition
@@ -218,3 +219,25 @@ sources:
     refresh_days: 90
     fetch_status: blocked
     notes: "Returns HTTP 403 to non-browser clients (checked 2026-09-04)."
+
+  # ---------------------------------- EVALUATED AND REJECTED (kept as a record)
+  - id: nsws-portal
+    publisher: National Single Window System (Invest India / DPIIT)
+    title: NSWS - approvals and registrations, incl. incorporation of a company
+    url: https://www.nsws.gov.in/portal/approvalsandregistrations
+    authority_tier: 3
+    domains: [incorporation]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+    fetch_status: blocked
+    notes: >-
+      Reachable (HTTP 200) and squarely on-topic - it carries an official
+      Ministry of Corporate Affairs page for incorporation of a company - but
+      the portal is a client-rendered single-page app: the server returns 29
+      characters of text and builds the content in the browser. Collecting it
+      would need a headless browser in the ingest path, which is a large
+      dependency and a much slower, more fragile fetch. Recorded here so the
+      next person does not rediscover it; the honest status today is that the
+      most promising remaining route to incorporation coverage needs a
+      different collection mechanism, not a different URL.

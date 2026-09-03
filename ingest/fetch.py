@@ -23,12 +23,14 @@ import argparse
 import hashlib
 import json
 import re
+import ssl
 import sys
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+import certifi
 import httpx
 import structlog
 
@@ -107,12 +109,41 @@ class Fetcher:
             timeout=30.0,
             follow_redirects=True,
         )
+        # Hosts needing an extra intermediate get their own client, because the
+        # trust store is fixed when the client is built. Cached so a run does not
+        # rebuild an SSL context per request.
+        self._pinned: dict[str, httpx.Client] = {}
 
     def __enter__(self) -> Fetcher:
         return self
 
     def __exit__(self, *exc: object) -> None:
         self._client.close()
+        for client in self._pinned.values():
+            client.close()
+
+    def _client_for(self, entry: SourceEntry) -> httpx.Client:
+        """The client to use for this source.
+
+        Entries with a ``ca_bundle`` get a context that trusts the normal root
+        store *plus* the intermediate their server omits. This adds a link to
+        the chain; it does not lower the bar. ``verify=False`` appears nowhere
+        in this project, deliberately - a response that cannot be authenticated
+        must not be quoted as law.
+        """
+        bundle = entry.ca_bundle_path
+        if bundle is None:
+            return self._client
+        if entry.ca_bundle not in self._pinned:
+            context = ssl.create_default_context(cafile=certifi.where())
+            context.load_verify_locations(cafile=str(bundle))
+            self._pinned[str(entry.ca_bundle)] = httpx.Client(
+                headers={"User-Agent": USER_AGENT},
+                timeout=30.0,
+                follow_redirects=True,
+                verify=context,
+            )
+        return self._pinned[str(entry.ca_bundle)]
 
     def _paths(self, entry: SourceEntry) -> tuple[Path, Path]:
         stem = self.cache_dir / entry.id
@@ -142,7 +173,7 @@ class Fetcher:
         self._throttle()
         now = datetime.now(UTC)
         try:
-            response = self._client.get(entry.url)
+            response = self._client_for(entry).get(entry.url)
             status = response.status_code
             text = extract_text(response.text) if status == 200 else ""
         except httpx.HTTPError as exc:
