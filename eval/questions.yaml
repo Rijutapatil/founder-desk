@@ -1,0 +1,180 @@
+# The evaluation set.
+#
+# Every `grounded` question is a **paraphrase**, deliberately not the wording of
+# the span it should retrieve. That matters more than it sounds. The corpus is
+# built from FAQ pages, so the lazy version of this file - copy each source
+# question, label it with its own span - would measure string matching and
+# report ~1.00, which is worse than no number at all because it looks like
+# quality. Paraphrasing forces the retriever to bridge "papers I have to upload"
+# to "documents required", which is the job.
+#
+# `refused` questions have no answer in this corpus and the system must say so.
+# Some are plainly off-topic; others (INC-20A, FSSAI) are squarely the kind of
+# thing a founder asks and are *in scope for the project* but not covered,
+# because MCA blocks automated collection. Those are the honest, valuable
+# refusals - the ones where a plausible-sounding span exists and must not be used.
+#
+# `clarify` questions turn on state law with no state given. `informational`
+# questions ask for a recommendation no source can supply.
+
+grounded:
+  # ---- GST: registration and thresholds
+  - q: "My sales are under 10 lakh but I made one sale to a customer in another state. Am I liable?"
+    source: cbic-gst-faq
+    anchor: "All supplies are below 10 Lakhs"
+  - q: "I take on projects in several different states. Do I need a separate GST number in each one?"
+    source: cbic-gst-faq
+    anchor: "civil contractor doing projects in various states"
+  - q: "I only deal in zero-rated grains and pulses. Must I still take GST registration once I cross the limit?"
+    source: cbic-gst-faq
+    anchor: "trades only 0% GST items"
+  - q: "If I sign up for GST voluntarily while under 20 lakh, do I start paying tax from my very first sale?"
+    source: cbic-gst-faq
+    anchor: "register voluntarily though turnover is less than 20 Lakhs"
+  - q: "One company doing both manufacturing and trading inside the same state - one GSTIN or two?"
+    source: cbic-gst-faq
+    anchor: "separate registration required for trading and manufacturing"
+  - q: "What is the deadline for taking GST registration once I become liable?"
+    source: cbic-gst-faq
+    anchor: "How long can I wait to register"
+  - q: "Can I sell to buyers in other states without GST if I am below 20 lakh?"
+    source: cbic-gst-faq
+    anchor: "unregistered dealer supply goods to other States"
+  - q: "We are registered but deal only in exempt goods. Do we still have to file returns?"
+    source: cbic-gst-faq
+    anchor: "dealing exclusively in exempted products has GST registration"
+  - q: "Everything I sell is exported services. Is registration compulsory for me?"
+    source: cbic-gst-faq
+    anchor: "outward supplies are export services"
+  - q: "Can I hold two GST registrations on one PAN for two different business names?"
+    source: cbic-gst-faq
+    anchor: "two different companies with different names but with same PAN"
+  - q: "Does a job worker have to register, and is the composition scheme open to them?"
+    source: cbic-gst-faq
+    anchor: "job worker is required to register"
+  - q: "I provide services and turn over 50 lakh in a single state. Can I opt for composition?"
+    source: cbic-gst-faq
+    anchor: "service provider with turnover of Rs. 50 lakhs"
+  - q: "Does a franchisor need registration in every state where its outlets operate?"
+    source: cbic-gst-faq
+    anchor: "franchisor company will have to take registration"
+  - q: "Our Maharashtra company is running one single event in Delhi. Must we register there?"
+    source: cbic-gst-faq
+    anchor: "company in Maharashtra holds only one event in Delhi"
+  - q: "Two SEZ units inside the same state - one registration or two?"
+    source: cbic-gst-faq
+    anchor: "two SEZ units within same state"
+  - q: "I am starting a business now. Do I need a TIN first, or can I go straight to GST?"
+    source: cbic-gst-faq
+    anchor: "starting new business today, still need to get TIN"
+  - q: "When I compute aggregate turnover, do purchases on which I pay reverse charge count?"
+    source: cbic-gst-faq
+    anchor: "aggregate turnover include value of inward supplies received on which RCM"
+  - q: "I am registered in Tamil Nadu and buying services from an unregistered dealer in Andhra Pradesh. Do I need registration there?"
+    source: cbic-gst-faq
+    anchor: "registered in TN and getting the service from unregistered dealer of AP"
+  - q: "An existing taxpayer opening a branch in another state - fresh registration or an amendment?"
+    source: cbic-gst-faq
+    anchor: "Existing taxpayer registering a branch office in another state"
+  - q: "Is registration needed if I only make interstate supplies of nil rated goods?"
+    source: cbic-gst-faq
+    anchor: "registration necessary if only interstate supply of Nil rated goods"
+
+  # ---- Provident fund: employer obligations
+  - q: "Can an employee put in more than the statutory 12 percent into provident fund?"
+    source: epfo-faq
+    anchor: "pay contribution in excess of the statutory rate"
+  - q: "If someone's basic plus dearness allowance is above 15,000 rupees, must they join EPF?"
+    source: epfo-faq
+    anchor: "drawing more than Rs. 15000/- Basic + DA"
+  - q: "Can I recover the employer's share of PF from my employee's salary?"
+    source: epfo-faq
+    anchor: "share of contribution from the wages of employees"
+  - q: "Am I allowed to cut wages because of what I pay into provident fund?"
+    source: epfo-faq
+    anchor: "wages be reduced by the employer on account of payment to the EPF"
+  - q: "Does someone on an apprenticeship have to be enrolled in provident fund?"
+    source: epfo-faq
+    anchor: "apprentice can become a member"
+  - q: "Is there any age limit on joining EPF?"
+    source: epfo-faq
+    anchor: "member of EPF without any age restriction"
+  - q: "When a person changes jobs, can the provident fund account move with them?"
+    source: epfo-faq
+    anchor: "change in employment whether a member can get his PF account transferred"
+  - q: "My employer never enrolled me in provident fund. Who do I take this to?"
+    source: epfo-faq
+    anchor: "not given the PF membership, to whom he can approach"
+  - q: "Can a person keep paying into EPF after they have quit their job?"
+    source: epfo-faq
+    anchor: "contribute to the EPF after leaving the service"
+  - q: "If someone is paid daily or by the piece, how is their contribution worked out?"
+    source: epfo-faq
+    anchor: "paid wages on daily basis or on piece rate basis"
+  - q: "Is there a salary ceiling above which someone cannot join EPF?"
+    source: epfo-faq
+    anchor: "without any restriction to his salary/wages"
+
+  # ---- Startup India / DPIIT
+  - q: "Can a one person company get Startup India benefits?"
+    source: startupindia-faq
+    anchor: "One Person Company (OPC) be eligible"
+  - q: "We have not got a PAN yet. Can we still register on the Startup India portal?"
+    source: startupindia-faq
+    anchor: "entity does not have a PAN"
+  - q: "Can a foreign national be a partner in an LLP and still get it registered with Startup India?"
+    source: startupindia-faq
+    anchor: "foreigner enter into partnership under the LLP Act"
+  - q: "Which papers do I have to upload to get DPIIT recognised?"
+    source: startupindia-faq
+    anchor: "documents required by Startups to get recognized"
+  - q: "How long does the recognition certificate take when the company already exists?"
+    source: startupindia-faq
+    anchor: "time-frame for obtaining certificate of recognition"
+  - q: "Is a company incorporated abroad allowed onto the Startup India hub?"
+    source: startupindia-faq
+    anchor: "foreign company register under Startup India hub"
+  - q: "My DPIIT application came back marked incomplete. Do I edit it or file a fresh one?"
+    source: startupindia-faq
+    anchor: "gets rejected or marked incomplete"
+  - q: "How long does the Inter-Ministerial Board take to certify a company for tax exemption?"
+    source: startupindia-faq
+    anchor: "certification of Inter-Ministerial Board for availing tax exemption"
+  - q: "An investor sent us a term sheet - what is actually in one?"
+    source: startupindia-faq
+    anchor: "What is a Term Sheet"
+  - q: "How do patent facilitators claim their fees for work done for startups?"
+    source: startupindia-faq
+    anchor: "reimbursement by patent facilitators"
+
+refused:
+  # In scope for the project, not covered by the corpus - MCA blocks collection.
+  - q: "By when must I file INC-20A after incorporation?"
+  - q: "What is the penalty for filing form AOC-4 late?"
+  - q: "How many directors must a private limited company have?"
+  - q: "What is the stamp duty payable on issuing share certificates by a company?"
+  # Genuinely outside the project's scope.
+  - q: "What is the capital gains tax on selling a house?"
+  - q: "How do I get an FSSAI licence for a food business?"
+  - q: "How much does it cost to register a trademark for a logo in India?"
+  - q: "What is the visa process for bringing a foreign director to India?"
+  - q: "How do I open a company bank account in Singapore?"
+  - q: "What is the best CRM software for an early stage startup?"
+  - q: "How do I train a neural network on a small dataset?"
+  - q: "Who won the cricket world cup?"
+
+clarify:
+  - q: "Do I need shops and establishment registration?"
+  - q: "Is professional tax applicable to my company?"
+  - q: "What is the stamp duty on a rent agreement in Pune?"
+  - q: "Do I need a labour licence for my office?"
+  - q: "How do I register under the shops and establishment act for my startup in Bangalore?"
+  - q: "What are the professional tax slabs for my employees?"
+  - q: "Do I need a state licence to open an office?"
+
+informational:
+  - q: "Should I register an LLP or a Pvt Ltd?"
+  - q: "Which is better for a startup, an OPC or a private limited company?"
+  - q: "Is it worth registering for GST voluntarily?"
+  - q: "Should I opt for the composition scheme?"
+  - q: "What would you recommend for my company structure?"

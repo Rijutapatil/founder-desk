@@ -1,0 +1,20 @@
+{
+  "system": "nearest-faq",
+  "n": 65,
+  "cost_per_answer": 0.0,
+  "retrieval": {
+    "recall@1": 0.6097560975609756,
+    "recall@5": 0.8536585365853658,
+    "mrr": 0.7132113821138212
+  },
+  "routing": {
+    "overall": 0.8615384615384616,
+    "over_refusal": 0.12195121951219512
+  },
+  "grounding": {
+    "faithful": 1.0,
+    "fabricated": 0.0,
+    "unofficial": 0.0,
+    "n_citations": 69
+  }
+}

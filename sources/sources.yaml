@@ -1,0 +1,220 @@
+# The allowlist. Nothing outside this file can enter the index.
+#
+# Every entry must be published on an official government host (see
+# OFFICIAL_HOST_SUFFIXES in loader.py) and must declare a licence and a refresh
+# window. The loader raises on anything else, so "official sources only" is a
+# property of the code rather than a promise in a README.
+#
+# `fetch_status: blocked` records sources that are in scope but return 403 to
+# automated clients. They stay listed on purpose - deleting them would make the
+# corpus look complete when a whole domain is under-covered.
+#
+# Status of every URL below was checked against the live sites on 2026-09-04.
+
+sources:
+  # ---------------------------------------------------------------- GST
+  - id: cbic-gst-faq
+    publisher: Central Board of Indirect Taxes and Customs (CBIC)
+    title: Frequently Asked Questions on GST
+    url: https://cbic-gst.gov.in/faq.html
+    authority_tier: 3
+    domains: [gst]
+    license: "CBIC website content - reproduction permitted with acknowledgement; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    notes: "~52k characters of departmental Q&A. The single densest on-scope source."
+
+  - id: cbic-gst-registration-faq
+    publisher: Central Board of Indirect Taxes and Customs (CBIC)
+    title: FAQs and User Manual on new GST Registration
+    url: https://cbic-gst.gov.in/faqs-user-manual-new-gst-registration.html
+    authority_tier: 3
+    domains: [gst]
+    license: "CBIC website content - reproduction permitted with acknowledgement; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+
+  - id: cbic-gst-sectoral-faq
+    publisher: Central Board of Indirect Taxes and Customs (CBIC)
+    title: Sectoral FAQs on GST
+    url: https://cbic-gst.gov.in/sectoral-faq.html
+    authority_tier: 3
+    domains: [gst]
+    license: "CBIC website content - reproduction permitted with acknowledgement; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    notes: "Sector-by-sector Q&A, ~141k characters."
+
+  - id: gstn-enrolment-help
+    publisher: Goods and Services Tax Network (GSTN)
+    title: How do I register with GST - portal help
+    url: https://www.gst.gov.in/help/enrollmentwithgst
+    authority_tier: 3
+    domains: [gst]
+    license: "GST portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+
+  - id: gstn-returns-help
+    publisher: Goods and Services Tax Network (GSTN)
+    title: How do I file returns - portal help
+    url: https://www.gst.gov.in/help/returns
+    authority_tier: 3
+    domains: [gst]
+    license: "GST portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+
+  # ------------------------------------------------------------- LABOUR
+  - id: epfo-act-1952
+    publisher: Employees' Provident Fund Organisation (EPFO)
+    title: Employees' Provident Funds and Miscellaneous Provisions Act, 1952
+    url: https://www.epfo.gov.in/epf-mp-act-1952
+    authority_tier: 1
+    domains: [labour]
+    license: "EPFO website content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 365
+    notes: "Statute text. Long refresh window - Acts change by amendment, not silently."
+
+  - id: epfo-faq
+    publisher: Employees' Provident Fund Organisation (EPFO)
+    title: EPFO Frequently Asked Questions
+    url: https://www.epfo.gov.in/faq-epfo/
+    authority_tier: 3
+    domains: [labour]
+    license: "EPFO website content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+
+  - id: epfo-employer-documents
+    publisher: Employees' Provident Fund Organisation (EPFO)
+    title: Employer documents and registration
+    url: https://www.epfo.gov.in/employer-documents/
+    authority_tier: 3
+    domains: [labour]
+    license: "EPFO website content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+
+  - id: esic-acts
+    publisher: Employees' State Insurance Corporation (ESIC)
+    title: ESI Acts, Rules and Regulations
+    url: https://esic.gov.in/esi-acts
+    authority_tier: 1
+    domains: [labour]
+    license: "ESIC website content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 365
+    fetch_status: blocked
+    notes: >-
+      TLS failure, not a 403: esic.gov.in serves an incomplete certificate chain
+      ("unable to get local issuer certificate", checked 2026-09-04). Disabling
+      certificate verification would collect it, and is refused deliberately -
+      turning off TLS validation to ingest legal text is precisely the wrong
+      trade, since a tampered response would be indistinguishable from a real
+      one. Blocked until the chain is fixed upstream or an intermediate bundle
+      is pinned explicitly.
+
+  # ------------------------------------------------------ STARTUP INDIA
+  - id: startupindia-recognition
+    publisher: DPIIT / Startup India
+    title: Startup recognition - eligibility and process
+    url: https://www.startupindia.gov.in/content/sih/en/startupgov/startup_recognition_page.html
+    authority_tier: 3
+    domains: [startup_india]
+    license: "Startup India portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+    notes: "The DPIIT recognition criteria most founders ask about first."
+
+  - id: startupindia-faq
+    publisher: DPIIT / Startup India
+    title: Startup India Frequently Asked Questions
+    url: https://www.startupindia.gov.in/content/sih/en/about_us/faqs.html
+    authority_tier: 3
+    domains: [startup_india]
+    license: "Startup India portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+
+  - id: startupindia-self-certification
+    publisher: DPIIT / Startup India
+    title: Self-certification under labour and environment laws
+    url: https://www.startupindia.gov.in/content/sih/en/startupgov/self-certification.html
+    authority_tier: 3
+    domains: [startup_india, labour]
+    license: "Startup India portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+
+  # ------------------------------------------------------ BANKING / FEMA
+  - id: rbi-master-directions
+    publisher: Reserve Bank of India
+    title: Master Directions index
+    url: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx
+    authority_tier: 2
+    domains: [banking_fema]
+    license: "RBI website content - reproduction permitted with acknowledgement; terms not yet read in full"
+    license_verified: false
+    refresh_days: 30
+    notes: >-
+      Index page, not a single direction. Short refresh window because RBI
+      amends master directions continuously. Deep-linking individual FEMA
+      directions is a known gap - see README coverage table.
+
+  # ------------------------------------------------- TAX REGISTRATION
+  - id: incometax-portal
+    publisher: Income Tax Department
+    title: Income Tax Department e-filing portal
+    url: https://www.incometax.gov.in/iec/foportal/
+    authority_tier: 3
+    domains: [tax_registration]
+    license: "Income Tax Department website content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+    notes: >-
+      Portal root. PAN/TAN application help lives behind client-rendered
+      navigation; deep links returned 404 on 2026-09-04. Known gap.
+
+  # ------------------------------------------ BLOCKED (in scope, uncollectable)
+  - id: mca-portal
+    publisher: Ministry of Corporate Affairs
+    title: MCA portal - incorporation, ROC filings, Companies Act resources
+    url: https://www.mca.gov.in/
+    authority_tier: 3
+    domains: [incorporation]
+    license: "MCA website content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+    fetch_status: blocked
+    notes: >-
+      Returns HTTP 403 to non-browser clients (checked 2026-09-04). This is the
+      primary source for incorporation, SPICe+, INC-20A and ROC filing
+      deadlines, so the incorporation domain is materially under-covered until
+      an accessible route exists. Listed rather than deleted so the gap is
+      visible in the coverage report.
+
+  - id: indiacode-companies-act
+    publisher: India Code (Legislative Department, Ministry of Law and Justice)
+    title: Companies Act, 2013
+    url: https://www.indiacode.nic.in/
+    authority_tier: 1
+    domains: [incorporation]
+    license: "India Code - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 365
+    fetch_status: blocked
+    notes: "Returns HTTP 403 to non-browser clients (checked 2026-09-04)."
+
+  - id: labour-ministry
+    publisher: Ministry of Labour and Employment
+    title: Ministry of Labour and Employment - Acts and rules
+    url: https://labour.gov.in/
+    authority_tier: 2
+    domains: [labour]
+    license: "Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    fetch_status: blocked
+    notes: "Returns HTTP 403 to non-browser clients (checked 2026-09-04)."

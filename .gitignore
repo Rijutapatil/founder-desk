@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.env
+# Raw fetched documents are large and fully regenerable from sources.yaml.
+data/raw/
+data/cache/

@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly freshness check. Not on every PR: it re-fetches every source, and
+    # hammering government portals on each push would be both rude and useless -
+    # the sources do not change between two commits.
+    - cron: "0 3 * * 1"
+
+jobs:
+  quality:
+    name: lint, types, tests
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev,ingest,serving]"
+
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Types
+        run: mypy agent ingest eval serving sources
+
+      - name: Tests
+        run: pytest -q
+
+  quality-gate:
+    name: quality regression gate
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev,ingest]"
+
+      # Runs the model-free retrieval baseline against the committed corpus: no
+      # API key, no billing, no network. That is what makes it affordable to gate
+      # *every* pull request rather than only the ones where someone remembers to
+      # run an eval - and a gate too expensive to run is a gate that gets disabled.
+      - name: Quality gate
+        run: python -m eval.gate_cli
+
+  freshness:
+    name: source freshness
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[ingest]"
+
+      # Re-fetches every allowlisted source and compares the normalised content
+      # hash against what the committed corpus was built from. A failure here
+      # does not mean the code broke - it means the law moved, and the corpus
+      # needs rebuilding.
+      - name: Check sources for upstream changes
+        run: python -m ingest.watch --fail-on-change
