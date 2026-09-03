@@ -115,13 +115,21 @@ system should be auditable on it:
 
 | tier | what it is | in this corpus |
 |---|---|---|
-| 1 | statute and rules | 70 spans |
-| 2 | notifications, circulars, RBI master directions | 2 spans |
-| 3 | official guidance — portal FAQs, department help pages | 471 spans |
+| 1 | statute and rules | 27 spans |
+| 2 | notifications, circulars, RBI master directions | 1 span |
+| 3 | official guidance — portal FAQs, department help pages | 468 spans |
 
 The tier-3 skew is honest and is the single biggest weakness of the current
 corpus: departmental FAQs are what these portals actually publish as HTML, while
 the Acts and Rules sit behind PDFs and blocked hosts.
+
+It got *worse*, deliberately, when the fragment and contents-page filters landed:
+tier-1 spans fell from 70 to 27. The chunks removed were real statute text and
+correctly cited, but they opened mid-sentence or were pure section-number lists,
+and quoting one next to a clean answer makes the good quote look less
+trustworthy rather than the fragment more so. Fewer, readable statute spans is
+the right trade at this corpus size; properly parsing the Act into sections is
+the fix, and it has not been done.
 
 **Licences are declared, not assumed.** Every entry names the terms it is reused
 under and carries `license_verified: false` until a human has actually read that
@@ -132,15 +140,15 @@ implying diligence that has not happened.
 
 ## The corpus
 
-543 spans, 300,181 characters, from 14 of 18 allowlisted sources.
+496 spans, 236,686 characters, from 14 of 18 allowlisted sources.
 
 | domain | spans | note |
 |---|---|---|
-| gst | 321 | CBIC FAQs + GST portal help |
-| labour | 182 | EPF & MP Act 1952, EPFO FAQs, ESI Acts |
-| startup_india | 36 | DPIIT recognition, self-certification |
-| tax_registration | 4 | Income Tax portal only |
-| banking_fema | 2 | RBI master directions index only |
+| gst | 320 | CBIC FAQs + GST portal help |
+| labour | 139 | EPF & MP Act 1952, EPFO FAQs, ESI Acts |
+| startup_india | 35 | DPIIT recognition, self-certification |
+| tax_registration | 3 | Income Tax portal only |
+| banking_fema | 1 | RBI master directions index only |
 | **incorporation** | **0** | **see below** |
 
 ### What could not be collected, and why
@@ -360,7 +368,10 @@ repeat their labels, prose does not — is backwards for legal text. The EPF Act
 densest passages score 0.33 unique words because statutes repeat defined terms;
 a Startup India link menu scores 0.72. Filtering on it removed 71 of 77 statute
 chunks and kept the menus. Sentence-terminator count separates them cleanly
-(menus: 0, statute prose: 4–81) and is what ships.
+(menus: 0, statute prose: 4–81) and is what ships — with one correction, since
+statutory section numbers ("16.", "17B.") are periods too, and a table of
+contents is nothing but section numbers. Stripping them before counting is what
+stops the EPF Act's contents page scoring 26 "sentences".
 
 ---
 
@@ -432,7 +443,7 @@ serving/     CLI and FastAPI service
 | area | state |
 |---|---|
 | Allowlist + licence/host enforcement | ✅ measured |
-| Ingestion, 14 sources, 543 spans | ✅ measured |
+| Ingestion, 14 sources, 496 spans | ✅ measured |
 | Freshness ledger + weekly CI job | ✅ built; no upstream change observed yet |
 | Hybrid retrieval | ✅ measured |
 | Cross-encoder reranking | ✅ measured (opt-in) |

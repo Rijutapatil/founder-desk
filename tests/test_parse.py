@@ -79,6 +79,41 @@ def test_link_menus_are_dropped_from_prose_chunks() -> None:
     assert spans == []
 
 
+def test_a_chunk_opening_mid_sentence_is_dropped() -> None:
+    """Correctly cited, completely unreadable.
+
+    Chunking a statute on block boundaries sometimes opens on a continuation.
+    Quoting one of these next to a clean answer makes the good quote look less
+    trustworthy, not the fragment more so.
+    """
+    fragment = (
+        "[or the Insurance Scheme] to the credit of his account Insurance Fund], as the case "
+        "may be. establishment or of an exempted employee of an establishment to time and in "
+        "such manner as may be specified in the 17A. Transfer of accounts employed."
+    )
+    spans = build_spans(
+        _entry(), FetchResult("src", "u", 200, NOW, fragment, content_hash(fragment), False)
+    )
+    assert spans == []
+
+
+def test_a_table_of_contents_is_dropped() -> None:
+    """Section numbers are periods too.
+
+    A contents page is nothing but section numbers, so a naive sentence-ending
+    count scores it highly and lets it through - the EPF Act's contents page
+    scored 26 'terminators'.
+    """
+    toc = (
+        "16. Act not to apply to certain establishments 17B. Liability in case of transfer of "
+        "18. Protection of action taken in good faith 18A. Authorities and inspector to be "
+        "public servants 20. Power of Central Government to give directions 22. Power to "
+        "remove difficulties 5C. Board of Trustees to be body corporate"
+    )
+    spans = build_spans(_entry(), FetchResult("src", "u", 200, NOW, toc, content_hash(toc), False))
+    assert spans == []
+
+
 def test_prose_chunks_survive() -> None:
     prose = " ".join(
         [

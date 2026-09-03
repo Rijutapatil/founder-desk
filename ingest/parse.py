@@ -59,10 +59,29 @@ _FOOTER = re.compile(
 )
 # Numbering artefacts between a list index and its question ("2", "Q3.").
 _INDEX_LINE = re.compile(r"^(?:Q\s*)?\d{1,3}[.)]?$", re.IGNORECASE)
+# Statutory section references - "16.", "17B.", "6A." - which look like sentence
+# endings to a naive period count.
+_SECTION_NUMBER = re.compile(r"\b\d{1,3}[A-Z]{0,2}\.\s")
 
 # Prose chunking budget. Large enough to hold a full statutory sub-section,
 # small enough that a hit points at something a reader can check quickly.
 _CHUNK_CHARS = 1400
+
+
+def _starts_mid_sentence(text: str) -> bool:
+    """A chunk that begins part-way through a sentence cannot be quoted.
+
+    Chunking a statute on block boundaries sometimes opens on a continuation -
+    "[or the Insurance Scheme] to the credit of his account Insurance Fund], as
+    the case may be." That is a real fragment of a real Act, correctly cited,
+    and completely unreadable as an answer. Quoting it next to a clean sentence
+    makes the good quote look less trustworthy, not the fragment more so.
+
+    An opening capital letter or digit is a cheap, reliable proxy for "this is
+    where a sentence starts".
+    """
+    head = text.lstrip()
+    return bool(head) and not (head[0].isupper() or head[0].isdigit())
 
 
 def _is_menu(text: str) -> bool:
@@ -74,6 +93,14 @@ def _is_menu(text: str) -> bool:
     The signal is **sentence terminators**, and only that. Measured over the real
     corpus: RBI and GSTN index strips carry 0 terminators per chunk, while the
     EPF Act's prose carries 4 to 81.
+
+    One refinement is needed to make that signal honest: statutory section
+    numbers ("16.", "17B.") are periods too, and a table of contents is nothing
+    but section numbers. Counting them as sentence endings let the EPF Act's
+    contents page - "16. Act not to apply to certain establishments 17B.
+    Liability in case of transfer of 18. Protection of action taken in good
+    faith" - score 26 terminators and sail through. They are stripped before
+    counting, so the test measures sentences rather than enumeration.
 
     A word-repetition test was tried first and *rejected on the measurement*.
     The intuition - that menus repeat their labels while prose does not - is
@@ -87,7 +114,8 @@ def _is_menu(text: str) -> bool:
     words = text.split()
     if len(words) < 12:
         return True
-    return (text.count(".") + text.count("?")) < 2
+    prose = _SECTION_NUMBER.sub(" ", text)
+    return (prose.count(".") + prose.count("?")) < 2
 
 
 _NAV_HINTS = (
@@ -312,7 +340,9 @@ def build_spans(
     return [
         span(span_key(chunk.text), chunk.text, f"{entry.title} (part {n})", chunk.start, chunk.end)
         for n, chunk in enumerate(chunk_prose(result.text), start=1)
-        if not _is_noise(chunk.text) and not _is_menu(chunk.text)
+        if not _is_noise(chunk.text)
+        and not _is_menu(chunk.text)
+        and not _starts_mid_sentence(chunk.text)
     ]
 
 
