@@ -93,6 +93,21 @@ class SourceEntry(BaseModel):
     entity_types: tuple[EntityType, ...] = ()
 
     fetch_status: FetchStatus = FetchStatus.OK
+    render: bool = Field(
+        default=False,
+        description=(
+            "Page builds its content client-side, so collecting it needs a headless "
+            "browser (the optional [browser] extra). Not a way past a block."
+        ),
+    )
+    content_selector: str | None = Field(
+        default=None,
+        description=(
+            "CSS selector for the page's content region. Rendered pages carry the whole "
+            "site's header and footer in <body>; naming the content region is cleaner "
+            "than filtering the chrome out afterwards."
+        ),
+    )
     ca_bundle: str | None = Field(
         default=None,
         description=(

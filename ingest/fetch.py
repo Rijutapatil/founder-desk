@@ -34,6 +34,7 @@ import certifi
 import httpx
 import structlog
 
+from ingest.render import Renderer, RendererUnavailable
 from sources.loader import Allowlist, SourceEntry, load_allowlist
 
 log = structlog.get_logger(__name__)
@@ -113,6 +114,7 @@ class Fetcher:
         # trust store is fixed when the client is built. Cached so a run does not
         # rebuild an SSL context per request.
         self._pinned: dict[str, httpx.Client] = {}
+        self._renderer: Renderer | None = None
 
     def __enter__(self) -> Fetcher:
         return self
@@ -121,6 +123,8 @@ class Fetcher:
         self._client.close()
         for client in self._pinned.values():
             client.close()
+        if self._renderer is not None:
+            self._renderer.close()
 
     def _client_for(self, entry: SourceEntry) -> httpx.Client:
         """The client to use for this source.
@@ -155,6 +159,28 @@ class Fetcher:
             time.sleep(self._min_interval - elapsed)
         self._last_request = time.monotonic()
 
+    def _render(self, entry: SourceEntry) -> tuple[int, str]:
+        """Collect a client-rendered page, or report why it could not be.
+
+        A missing browser extra is not an error to raise: the other thirteen
+        sources collect fine without it, so the run continues and this one is
+        reported as uncollectable with the command that would fix it.
+        """
+        if self._renderer is None:
+            self._renderer = Renderer(
+                USER_AGENT, rps=1.0 / self._min_interval if self._min_interval else 1.0
+            )
+        try:
+            raw = self._renderer.render(entry.url, entry.content_selector)
+        except RendererUnavailable as exc:
+            log.warning("render_unavailable", source=entry.id, detail=str(exc))
+            return 0, ""
+        except Exception as exc:  # pragma: no cover - network/browser flake
+            log.warning("render_failed", source=entry.id, error=type(exc).__name__)
+            return 0, ""
+        lines = (normalise(line) for line in raw.splitlines())
+        return 200, "\n".join(line for line in lines if line)
+
     def fetch(self, entry: SourceEntry, *, refresh: bool = False) -> FetchResult:
         body_path, meta_path = self._paths(entry)
 
@@ -170,15 +196,18 @@ class Fetcher:
                 from_cache=True,
             )
 
-        self._throttle()
         now = datetime.now(UTC)
-        try:
-            response = self._client_for(entry).get(entry.url)
-            status = response.status_code
-            text = extract_text(response.text) if status == 200 else ""
-        except httpx.HTTPError as exc:
-            log.warning("fetch_failed", source=entry.id, error=type(exc).__name__)
-            status, text = 0, ""
+        if entry.render:
+            status, text = self._render(entry)
+        else:
+            self._throttle()
+            try:
+                response = self._client_for(entry).get(entry.url)
+                status = response.status_code
+                text = extract_text(response.text) if status == 200 else ""
+            except httpx.HTTPError as exc:
+                log.warning("fetch_failed", source=entry.id, error=type(exc).__name__)
+                status, text = 0, ""
 
         result = FetchResult(
             source_id=entry.id,

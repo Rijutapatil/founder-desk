@@ -147,6 +147,17 @@ grounded:
     source: startupindia-faq
     anchor: "reimbursement by patent facilitators"
 
+  # ---- Incorporation and contract labour (collected via headless rendering)
+  - q: "Which kinds of company can I set up in India?"
+    source: nsws-incorporation
+    anchor: "commence business in India and carry out commercial activity"
+  - q: "At how many contract workers does my establishment have to register?"
+    source: nsws-contract-labour
+    anchor: "20 or more workmen as contract labour"
+  - q: "What happens if a principal employer never registers for contract labour?"
+    source: nsws-contract-labour
+    anchor: "Section 36 of the Act"
+
 refused:
   # In scope for the project, not covered by the corpus - MCA blocks collection.
   - q: "By when must I file INC-20A after incorporation?"

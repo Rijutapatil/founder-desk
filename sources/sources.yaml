@@ -220,24 +220,75 @@ sources:
     fetch_status: blocked
     notes: "Returns HTTP 403 to non-browser clients (checked 2026-09-04)."
 
+  # ------------------------------------------- INCORPORATION (rendered)
+  # NSWS builds its pages in the browser: a plain GET returns 29 characters of
+  # shell. These need the optional [browser] extra. They are the only route
+  # found to official incorporation content - MCA itself refuses automated
+  # clients and is not spoofed.
+  - id: nsws-incorporation
+    publisher: National Single Window System (DPIIT) - Ministry of Corporate Affairs
+    title: Incorporation of a Company - approval details
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-corporate-affairs/ministry-of-corporate-affairs/incorporation-of-a-company
+    authority_tier: 3
+    domains: [incorporation]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+    notes: >-
+      Names the entity types (Private / Public / Government / Section 8 /
+      One-Person / Producer / IFSC / Foreign), the governing Companies Act 2013
+      and Companies Incorporation Rules 2014, and the stated processing time.
+
+  - id: nsws-startup-registration
+    publisher: National Single Window System (DPIIT)
+    title: Registration as a Startup - approval details
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-commerce-and-industry/dpiit/registration-as-a-startup
+    authority_tier: 3
+    domains: [startup_india, incorporation]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+    fetch_status: blocked
+    notes: >-
+      Renders correctly and the content region is found - it is simply empty
+      upstream. NSWS publishes this approval with no "About this approval" text
+      (202 characters, all labels and buttons). Marked uncollectable so the
+      coverage report reflects that nothing was learned from it, rather than
+      carrying a source that silently yields zero spans.
+
+  - id: nsws-contract-labour
+    publisher: National Single Window System (DPIIT) - Ministry of Labour and Employment
+    title: Registration under the Contract Labour (Regulation and Abolition) Act, 1970
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-labour-and-employment/ministry-of-labour-and-employment/registration-under-the-contract-labour-regulation-and-abolition-act-1970
+    authority_tier: 3
+    domains: [labour]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+
   # ---------------------------------- EVALUATED AND REJECTED (kept as a record)
-  - id: nsws-portal
+  - id: nsws-listing
     publisher: National Single Window System (Invest India / DPIIT)
-    title: NSWS - approvals and registrations, incl. incorporation of a company
+    title: NSWS - full approvals and registrations listing
     url: https://www.nsws.gov.in/portal/approvalsandregistrations
     authority_tier: 3
     domains: [incorporation]
     license: "NSWS portal content - Government of India; terms not yet read in full"
     license_verified: false
-    refresh_days: 60
+    refresh_days: 90
     fetch_status: blocked
     notes: >-
-      Reachable (HTTP 200) and squarely on-topic - it carries an official
-      Ministry of Corporate Affairs page for incorporation of a company - but
-      the portal is a client-rendered single-page app: the server returns 29
-      characters of text and builds the content in the browser. Collecting it
-      would need a headless browser in the ingest path, which is a large
-      dependency and a much slower, more fragile fetch. Recorded here so the
-      next person does not rediscover it; the honest status today is that the
-      most promising remaining route to incorporation coverage needs a
-      different collection mechanism, not a different URL.
+      The index of every central approval. Renders, but it is a paginated,
+      filtered React listing whose links load a ministry at a time, so
+      collecting the whole catalogue means driving the UI rather than fetching a
+      page. The three approval pages that matter for a first year are listed
+      individually above instead. Its internal JSON API
+      (/gateway-sec/form-builder-sec/marketplace/license-detail) returns HTTP 400
+      to a plain request - undocumented and not reverse-engineered, since the
+      rendered page is the interface the portal actually offers the public.

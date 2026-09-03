@@ -27,6 +27,12 @@ ingest = [
     "lxml>=5.2",
     "pypdf>=4.2",
 ]
+# Headless rendering for the handful of official portals that build their pages
+# client-side. Heavy (a browser binary), so it is opt-in: the committed corpus
+# means CI never needs it, and the other sources collect without it.
+browser = [
+    "playwright>=1.44",
+]
 # Cross-encoder reranking. torch is ~2 GB, so it is opt-in: the base install and
 # the default CI job run without it, and the eval reports retrieval quality both
 # with and without so the reranker has to earn its latency.

@@ -93,6 +93,113 @@ $ founder-desk ask "do I need shops and establishment registration in Mumbai"
 
 ---
 
+## What you can ask it
+
+The corpus covers the first year: GST, provident fund and contract labour,
+DPIIT recognition, and incorporation. Below is what actually works today, with
+the real answer each returns.
+
+**GST — registration, thresholds and returns** (320 spans, the deepest area)
+
+```bash
+founder-desk ask "do traders under 20 lakh turnover need GST registration"
+founder-desk ask "I take on projects in several states - do I need a GST number in each"
+founder-desk ask "if I register voluntarily under 20 lakh, do I pay tax from my first sale"
+founder-desk ask "can I hold two GST registrations on one PAN"
+founder-desk ask "I provide services and turn over 50 lakh - can I opt for composition"
+founder-desk ask "we deal only in exempt goods but are registered - do we file returns"
+```
+
+**Provident fund and contract labour** (141 spans)
+
+```bash
+founder-desk ask "if someone's basic plus DA is above 15000, must they join EPF"
+founder-desk ask "can I recover the employer's PF share from my employee's salary"
+founder-desk ask "does an apprentice have to be enrolled in provident fund"
+founder-desk ask "at how many contract workers must my establishment register"
+founder-desk ask "what happens if a principal employer never registers for contract labour"
+```
+
+**DPIIT / Startup India recognition** (35 spans)
+
+```bash
+founder-desk ask "can a one person company get startup india benefits"
+founder-desk ask "which papers do I upload to get DPIIT recognised"
+founder-desk ask "how long does the recognition certificate take"
+founder-desk ask "can a foreign national be an LLP partner and still register with startup india"
+```
+
+**Incorporation** (1 span — see the coverage table)
+
+```bash
+founder-desk ask "which kinds of company can I set up in India"
+```
+
+### And what it does instead of answering
+
+Three of the four outcomes are not answers, and they are the point.
+
+```bash
+# Asks, because this is state law and no state was given
+founder-desk ask "do I need shops and establishment registration in Mumbai"
+
+# Gives factors and names who should decide - never a recommendation
+founder-desk ask "should I register an LLP or a Pvt Ltd"
+
+# Refuses: in scope, but the source is uncollectable
+founder-desk ask "by when must I file INC-20A"
+
+# Refuses: outside what this covers
+founder-desk ask "how do I get an FSSAI licence for a food business"
+founder-desk ask "who won the cricket world cup"
+```
+
+Every example above was run before being written down, and behaves as shown.
+
+**Refusal is the weakest behaviour, and it is worth seeing it fail.** At 0.667 it
+is the lowest number in the evaluation, and it is sensitive to wording: *"How
+much does it cost to register a trademark for a logo in India?"* refuses
+correctly, while *"how much does it cost to trademark a logo in India"* returns
+a definition of a term sheet — a real quote, correctly cited, and no answer to
+the question at all. The refusal gate is lexical, so a rephrasing that shares
+more vocabulary with the corpus can clear it. If you get an answer that quotes
+something beside the point, that is what happened, and the citation will show
+it.
+
+Add `--state MH` (any ISO 3166-2:IN code) or `--entity pvt-ltd|llp|opc|sole-prop`
+to answer for a specific situation, and `founder-desk sources` to see every
+source it is allowed to read.
+
+---
+
+## What AI is in the backend?
+
+**None, by default.** No language model is called, no API key is needed, and
+nothing leaves your machine except the requests that fetch the government pages
+themselves. The only outbound calls anywhere in the package are in
+`ingest/fetch.py`.
+
+| stage | what actually runs |
+|---|---|
+| lexical retrieval | **BM25** — a ranking function from 1994. Arithmetic over term frequencies. |
+| semantic retrieval | **Character n-gram feature hashing** — a hash function, not a trained model. Deterministic and offline. |
+| answering | **Extractive.** The answer *is* the source's sentences, returned verbatim. There is no generation step. |
+| reranking *(optional, off)* | **`BAAI/bge-reranker-base`**, a local cross-encoder. The only neural network in the project. Downloads once, runs on your CPU, and only *reorders* candidates — it never writes text. |
+
+That is a design choice, not a limitation waiting to be fixed. Fabrication is
+impossible here by construction rather than by prompt: there is no step at which
+a sentence could acquire a fact the corpus does not contain. It also means the
+whole evaluation runs for `$0.0000` with no key, which is why the CI gate can
+afford to check every pull request.
+
+`agent/llm.py` defines a `StructuredModel` protocol for optionally synthesising
+several quotes into connected prose. It is **imported by nothing** — not the
+answerer, not the evaluation, not the service — and has never been run against a
+live model. If it is ever wired up, the groundedness judge and its zero-tolerance
+fabrication gate are already in place to police it.
+
+---
+
 ## How "vetted by official sources only" is enforced
 
 Not by a ranking preference. By a validator.
@@ -140,16 +247,16 @@ implying diligence that has not happened.
 
 ## The corpus
 
-496 spans, 236,686 characters, from 14 of 18 allowlisted sources.
+499 spans, 238,854 characters, from 16 of 21 allowlisted sources.
 
 | domain | spans | note |
 |---|---|---|
 | gst | 320 | CBIC FAQs + GST portal help |
-| labour | 139 | EPF & MP Act 1952, EPFO FAQs, ESI Acts |
+| labour | 141 | EPF & MP Act 1952, EPFO FAQs, ESI Acts, contract labour |
 | startup_india | 35 | DPIIT recognition, self-certification |
 | tax_registration | 3 | Income Tax portal only |
 | banking_fema | 1 | RBI master directions index only |
-| **incorporation** | **0** | **see below** |
+| incorporation | 1 | NSWS / Ministry of Corporate Affairs — **thin, see below** |
 
 ### What could not be collected, and why
 
@@ -160,22 +267,50 @@ This is the part most likely to be quietly omitted, so it is stated first.
 | MCA portal | HTTP 403 to any non-browser client |
 | India Code (Companies Act 2013) | HTTP 403 to any non-browser client |
 | Ministry of Labour | HTTP 403 to any non-browser client |
-| NSWS | reachable, but client-rendered — 29 characters of server HTML |
-
-**Incorporation still has zero coverage.** SPICe+, INC-20A, ROC filing deadlines
-and director requirements are unanswerable, and the system refuses them. All four
-stay listed in the allowlist rather than being deleted, so the gap shows up in
-the coverage report instead of disappearing.
-
-NSWS is the near miss worth recording: it is an official portal carrying a
-Ministry of Corporate Affairs page for incorporation of a company, it returns
-HTTP 200, and it is useless to a static fetcher because the page is built in the
-browser. Collecting it needs a headless browser in the ingest path — a different
-collection mechanism, not a different URL. That is the most promising remaining
-route to closing this gap.
+| NSWS full listing | renders, but the catalogue is a paginated React UI — see below |
+| NSWS startup registration | renders, and is **empty upstream**: no "About this approval" text |
 
 A browser User-Agent is not spoofed for the three that return 403. These are
-public services that have said no in the way a service says no.
+public services that have said no in the way a service says no, and a test pins
+that they are never routed through the renderer either.
+
+**Incorporation is now covered, thinly.** One span, from the official Ministry
+of Corporate Affairs page on NSWS: which entity types can be incorporated, the
+governing Companies Act, and the stated processing time. That is enough to
+answer "which kinds of company can I set up in India" and nowhere near enough for
+SPICe+, INC-20A, AOC-4 or director requirements — all of which the system still
+refuses.
+
+### Headless rendering, and the line it does not cross
+
+Some official portals build their pages in the browser. NSWS returns 29
+characters of server HTML and assembles everything client-side, so a static
+fetcher sees an empty shell however many times it asks — the same reason it would
+be unreachable to a reader without JavaScript.
+
+`ingest/render.py` drives headless Chromium for sources marked `render: true`,
+at the same one-request-per-second rate and **with the same honest identifying
+User-Agent as the plain fetcher**. What changes is only that the page's own
+JavaScript runs. A site that declines to serve us still declines: the three hosts
+returning 403 are not routed through the renderer, because using a browser to get
+past a refusal is working around a "no" rather than reading a page written for a
+browser.
+
+Each rendered source names a `content_selector`. Taking the whole `<body>` wraps
+every span in the site's header and footer — helpdesk number, ministry
+navigation, translation notice, copyright — and repeated across a corpus that
+boilerplate becomes common vocabulary, dragging on BM25 and diluting the quote a
+reader sees. A selector that stops matching returns nothing and logs it, rather
+than silently refilling the corpus with chrome.
+
+The browser is an optional extra (`pip install -e ".[browser]" && playwright
+install chromium`). The committed corpus means CI never needs it, and a missing
+browser is reported per source with the command that fixes it rather than
+failing the run.
+
+NSWS's internal JSON API was found and not used: it returns HTTP 400 to a plain
+request, and reverse-engineering an undocumented internal endpoint is a worse
+citizen than rendering the page the portal actually offers the public.
 
 ### ESIC: fixed properly rather than worked around
 
@@ -251,14 +386,14 @@ cost money and latency for worse recall.
 
 ### Does the cross-encoder earn its place?
 
-`python -m eval.runner --compare-rerank`, same 65 questions:
+`python -m eval.runner --compare-rerank`, same 68 questions:
 
 | | recall@1 | recall@3 | recall@5 | MRR | routing | latency |
 |---|---|---|---|---|---|---|
-| hybrid only | 0.610 | 0.805 | 0.854 | 0.713 | 0.862 | 0.38 ms |
-| + cross-encoder | **0.707** | **0.854** | **0.902** | **0.782** | 0.862 | 665 ms |
+| hybrid only | 0.636 | 0.818 | 0.864 | 0.734 | 0.853 | 0.38 ms |
+| + cross-encoder | **0.727** | **0.886** | **0.932** | **0.805** | 0.853 | 665 ms |
 
-`BAAI/bge-reranker-base`, CPU. It buys about 10 points of recall@1 for roughly
+`BAAI/bge-reranker-base`, CPU. It buys about 9 points of recall@1 for roughly
 1,750× the retrieval latency, plus a 2 GB dependency and a 13-second model load.
 Worth it for a batch or an API with a budget; not worth it for the default path,
 so it is opt-in behind `pip install -e ".[rerank]"` and the base install stays
@@ -271,14 +406,14 @@ spans that are semantically apt but share fewer words with the question, so they
 won the ranking and then failed a lexical gate. "Can this be answered" is a
 property of what was retrieved, not of the order it ended in — so the gate reads
 the first-stage candidates and the reranker only chooses what to quote. Routing
-is now identical across both, which is the property that makes the row above a
-fair comparison rather than two different systems.
+is now identical across both — 0.853 and 0.136 either way — which is the property
+that makes the row above a fair comparison rather than two different systems.
 
 ---
 
 ## Evaluation
 
-65 questions in [`eval/questions.yaml`](eval/questions.yaml): 41 answerable, 12
+68 questions in [`eval/questions.yaml`](eval/questions.yaml): 44 answerable, 12
 that must be refused, 7 that must ask for a state, 5 that must decline to
 recommend.
 
@@ -295,24 +430,22 @@ resolve at load time. Ambiguous or missing anchors are a hard error.
 
 Model-free retrieval baseline, `$0.0000` per answer:
 
-| retrieval (n=41) | |
+| retrieval (n=44) | |
 |---|---|
-| recall@1 | 0.610 |
-| recall@3 | 0.805 |
-| recall@5 | 0.854 |
-| recall@10 | 0.878 |
-| MRR | 0.713 |
+| recall@1 | 0.636 |
+| recall@5 | 0.864 |
+| MRR | 0.734 |
 
-| routing (n=65) | |
+| routing (n=68) | |
 |---|---|
-| overall | 0.862 |
-| grounded | 0.878 |
+| overall | 0.853 |
+| grounded | 0.864 |
 | clarify | 1.000 |
 | informational_only | 1.000 |
 | refused | 0.667 |
-| over-refusal | 0.122 |
+| over-refusal | 0.136 |
 
-| citation faithfulness (69 citations) | |
+| citation faithfulness (78 citations) | |
 |---|---|
 | faithful | 1.000 |
 | **fabricated** | **0.000** |
@@ -327,7 +460,7 @@ written too late.
 
 ### Reading these numbers honestly
 
-- **65 questions is small.** Recall@5 of 0.854 means six misses. Treat the third
+- **68 questions is small.** Recall@5 of 0.864 means six misses. Treat the third
   decimal as noise.
 - **Refusal accuracy is 0.667, the weakest number here**, and it is reported
   next to over-refusal on purpose: refusing everything would score 1.000 on one
@@ -336,7 +469,7 @@ written too late.
 - **Routing accuracy is not answer correctness.** It measures whether the system
   chose the right *kind* of response and retrieved the right span — not whether
   a reader would be well served by the quote.
-- **The corpus is 87% tier-3 guidance.** These numbers describe finding the
+- **The corpus is 94% tier-3 guidance.** These numbers describe finding the
   right FAQ entry, which is a lower bar than reading the Act.
 
 ### The refusal threshold was swept, not chosen
@@ -425,7 +558,8 @@ founder-desk sources
 ```
 
 Optional extras: `.[rerank]` for the cross-encoder, `.[serving]` for the API
-(`uvicorn serving.app:app`, with `/ask`, `/sources`, `/health`, `/ready`).
+(`uvicorn serving.app:app`, with `/ask`, `/sources`, `/health`, `/ready`), and
+`.[browser]` plus `playwright install chromium` for the client-rendered sources.
 
 ## Layout
 
@@ -443,20 +577,21 @@ serving/     CLI and FastAPI service
 | area | state |
 |---|---|
 | Allowlist + licence/host enforcement | ✅ measured |
-| Ingestion, 14 sources, 496 spans | ✅ measured |
+| Ingestion, 16 sources, 499 spans | ✅ measured |
 | Freshness ledger + weekly CI job | ✅ built; no upstream change observed yet |
 | Hybrid retrieval | ✅ measured |
 | Cross-encoder reranking | ✅ measured (opt-in) |
 | Router, refusal, clarify, judgement guard | ✅ measured |
 | Evaluation + CI gate | ✅ measured |
 | ESIC via pinned intermediate certificate | ✅ measured |
-| Incorporation domain | ❌ **no coverage** — MCA/India Code block bots, NSWS is client-rendered |
+| Headless rendering (optional extra) | ✅ measured |
+| Incorporation domain | ⚠️ **1 span** — MCA and India Code refuse automated clients |
 | Model-backed synthesis (`agent/llm.py`) | ⚠️ protocol + offline stub only; **never run against a live model** |
 
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-120 tests · `ruff` · `mypy --strict`
+127 tests · `ruff` · `mypy --strict`
 
 ## Licence
 
