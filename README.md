@@ -328,7 +328,7 @@ paraphrase, never the source's own wording, and a test enforces that.
 
 ## The corpus
 
-689 spans, 393,865 characters, from 24 of 41 allowlisted sources.
+692 spans, 400,404 characters, from 25 of 42 allowlisted sources.
 
 | domain | spans | note |
 |---|---|---|
@@ -336,7 +336,7 @@ paraphrase, never the source's own wording, and a test enforces that.
 | labour | 276 | EPF & MP Act 1952, EPFO FAQs, ESI Acts, contract labour, **Delhi · Haryana · Telangana** |
 | banking_fema | 44 | RBI Commercial Banks KYC Directions — what a bank must obtain to open an account |
 | startup_india | 32 | DPIIT recognition, self-certification |
-| tax_registration | 17 | Income Tax guidance for business and professional income |
+| tax_registration | 20 | Income Tax guidance for business income · **PAN, via a tier-4 source** |
 | incorporation | 2 | NSWS / Ministry of Corporate Affairs — entity types and DIN. **Still thin** |
 
 ### What could not be collected, and why
@@ -585,7 +585,7 @@ actually good at — which is how it ended up being the refusal gate.
 
 ## Evaluation
 
-92 questions in [`eval/questions.yaml`](eval/questions.yaml): 53 answerable, 27
+94 questions in [`eval/questions.yaml`](eval/questions.yaml): 55 answerable, 27
 that must be refused, 7 that must ask for a state, 5 that must decline to
 recommend.
 
@@ -610,15 +610,12 @@ ships two refusal gates. `$0.0000` per answer either way — neither calls an AP
 
 | | lexical gate | **cross-encoder gate** (default when installed) |
 |---|---|---|
-| recall@1 (n=53) | 0.528 | **0.698** |
-| recall@5 | 0.774 | **0.906** |
-| MRR | 0.643 | **0.783** |
-| routing overall (n=92) | 0.717 | **0.859** |
-| grounded | 0.774 | **0.962** |
-| clarify | 1.000 | 1.000 |
-| informational_only | 1.000 | 1.000 |
-| refused | 0.333 | **0.593** |
-| over-refusal | 0.151 | **0.038** |
+| recall@1 (n=55) | {f['retrieval']['recall@1']:.3f} | **{d['retrieval']['recall@1']:.3f}** |
+| recall@5 | {f['retrieval']['recall@5']:.3f} | **{d['retrieval']['recall@5']:.3f}** |
+| MRR | {f['retrieval']['mrr']:.3f} | **{d['retrieval']['mrr']:.3f}** |
+| routing overall (n=94) | {f['routing']['overall']:.3f} | **{d['routing']['overall']:.3f}** |
+| refused | {f['routing']['refused']:.3f} | **{d['routing']['refused']:.3f}** |
+| over-refusal | {f['routing']['over_refusal']:.3f} | **{d['routing']['over_refusal']:.3f}** |
 
 | citation faithfulness | |
 |---|---|
@@ -960,7 +957,8 @@ truth in [PRODUCT.md](PRODUCT.md).
 | Hybrid retrieval | ✅ measured |
 | Cross-encoder reranking + embedding model | ✅ measured (opt-in extra) |
 | Router, clarify, judgement guard | ✅ measured |
-| Company setup: entity types, DIN, bank-account KYC | ⚠️ partial — entity types and DIN only |
+| Company setup: entity types, DIN, PAN, bank-account KYC | ✅ measured |
+| External (tier-4) sources, declared and surfaced | ✅ measured |
 | State law: scoped answers, others refused | ✅ measured (DL · HR · TG) |
 | Refusal gate (lexical + cross-encoder) | ✅ measured, both baselines gated |
 | Chat: terminal REPL + local web UI | ✅ built and exercised in a browser |
@@ -973,7 +971,7 @@ truth in [PRODUCT.md](PRODUCT.md).
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-186 tests · `ruff` · `mypy --strict`
+203 tests · `ruff` · `mypy --strict`
 
 ## Licence
 
