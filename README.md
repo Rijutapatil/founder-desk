@@ -245,6 +245,30 @@ implying diligence that has not happened.
 
 ---
 
+## Roadmap — product phases
+
+What a founder would notice, ordered by who it helps rather than by difficulty.
+Each phase is shippable alone. The engineering view of the same work is in
+[Roadmap — engineering phases](#roadmap--engineering-phases).
+
+| # | Phase | Why a founder needs it | Done when |
+|---|---|---|---|
+| ✅ | **Sourced answers, or an honest refusal** | Search returns undated, uncited firm content | Every claim quotes a source with a date, or refuses |
+| ✅ | **Company setup: entity types, DIN, PAN, bank account** | The first questions anyone asks, and the ones it used to refuse | Entity types, DIN, PAN and account-opening documents answer with citations |
+| 🔶 | **The states founders register in** | Shop registration, professional tax and stamp duty are state law | Per state: is registration required, by when, hours rules, professional tax |
+| ⬜ | **"What am I supposed to be doing?"** | The real failure is the question nobody knew to ask; penalties follow | A profile produces a dated task list, every item citing its rule |
+| ⬜ | **Tell me when the rules change** | An answer right in March can be wrong in April | A weekly digest has caught one real amendment end to end |
+| ⬜ | **Answer in the founder's language** | State law is published in-language first, English late or never | A Marathi question returns a Marathi answer from Marathi source text |
+| ⬜ | **Clear it for other people to use** | The first question anyone asks of a public tool | Every source carries a checked licence, not an assumed one |
+
+**Phase 2 is partial:** Delhi, Haryana and Telangana are covered. Karnataka and
+Maharashtra are not, and the reasons are mechanical rather than editorial — see
+[What could not be collected, and why](#what-could-not-be-collected-and-why).
+
+**Phase 3 depends on 1 and 2.** A first-year checklist is only as trustworthy as
+the coverage beneath it, and one that silently omits company setup is worse than
+none at all.
+
 ## The corpus
 
 689 spans, 393,865 characters, from 24 of 41 allowlisted sources.
