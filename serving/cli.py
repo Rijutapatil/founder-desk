@@ -125,11 +125,18 @@ def main() -> int:
     ask.add_argument("--state", help="ISO 3166-2:IN code, e.g. MH, KA, DL")
     ask.add_argument("--entity", choices=[e.value for e in EntityType])
     ask.add_argument("--reranker", default="auto", choices=("auto", "identity", "cross-encoder"))
+    ask.add_argument(
+        "--embedder",
+        default="auto",
+        choices=("auto", "hashing", "model"),
+        help="hashing starts ~6s faster; the model gains recall@5 (see README)",
+    )
 
     chat = sub.add_parser("chat", help="a session: clarifying questions can be answered")
     chat.add_argument("--state", help="ISO 3166-2:IN code, e.g. MH")
     chat.add_argument("--entity", choices=[e.value for e in EntityType])
     chat.add_argument("--reranker", default="auto", choices=("auto", "identity", "cross-encoder"))
+    chat.add_argument("--embedder", default="auto", choices=("auto", "hashing", "model"))
 
     sub.add_parser("sources", help="list the allowlisted sources")
 
