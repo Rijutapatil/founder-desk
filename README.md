@@ -269,10 +269,21 @@ This is the part most likely to be quietly omitted, so it is stated first.
 | Ministry of Labour | HTTP 403 to any non-browser client |
 | NSWS full listing | renders, but the catalogue is a paginated React UI — enumerable with `ingest/discover_nsws.py` |
 | NSWS startup registration | renders, and is **empty upstream**: no "About this approval" text |
+| Karnataka Shops Act + Rules | scanned PDFs, no text layer — 65 pages yield 64 characters. Needs OCR |
+| Maharashtra Shops Rules 2018 | text layer is legacy-font Marathi, extracts as mojibake |
 
 A browser User-Agent is not spoofed for the three that return 403. These are
 public services that have said no in the way a service says no, and a test pins
 that they are never routed through the renderer either.
+
+**Delhi is the only state covered, and not for want of trying.** Karnataka and
+Maharashtra were searched properly and neither can be collected to the standard
+Delhi met — for mechanical reasons, each naming a different missing capability:
+Karnataka publishes its Shops Act only as scanned images (OCR), Maharashtra
+publishes its Rules in a legacy non-Unicode Marathi font (transcoding, and then
+an Indic-capable embedder). The state portals' own HTML is either 82% Devanagari
+or a thin forms menu — the shape already measured harmful. All three are listed
+with their reasons rather than quietly omitted.
 
 **Incorporation is now covered, thinly.** One span, from the official Ministry
 of Corporate Affairs page on NSWS: which entity types can be incorporated, the

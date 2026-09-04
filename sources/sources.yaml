@@ -264,6 +264,70 @@ sources:
     license_verified: false
     refresh_days: 90
 
+  # ------------------------- STATE LAW: KARNATAKA & MAHARASHTRA (not readable)
+  #
+  # Both were searched for properly and neither can be collected to the standard
+  # Delhi met. The reasons are mechanical, not editorial, and each is a different
+  # missing capability:
+  #
+  #   Karnataka Shops & Commercial Establishments Act 1961 and Rules 1963 are
+  #   published only as scanned PDFs with no text layer - 65 pages yielding 64
+  #   characters, 232 pages yielding 231. Reading them needs OCR.
+  #
+  #   Maharashtra's Rules 2018 PDF has a text layer, but it is Marathi in a
+  #   legacy non-Unicode font, so extraction returns mojibake
+  #   ("¨É½þÉ®úÉ¹]Åõ ¶ÉÉºÉxÉ"). Reading it needs legacy-font transcoding.
+  #
+  #   The Maharashtra labour portal's own HTML is 82% Devanagari, and the
+  #   Karnataka labour portal is English but a thin forms-and-menu surface -
+  #   the same shallow-but-on-topic shape that was measured harmful above.
+  #
+  # None are added. Adding a thin portal or a mojibake statute would repeat the
+  # NSWS result: more coverage on paper, worse answers in practice.
+
+  - id: karnataka-shops-act
+    publisher: Department of Labour, Government of Karnataka
+    title: Karnataka Shops and Commercial Establishments Act, 1961
+    url: https://karmikaspandana.karnataka.gov.in/storage/pdf-files/circulars/shopact-7-71.pdf
+    authority_tier: 1
+    domains: [labour]
+    states: [KA]
+    license: "Government of Karnataka website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 365
+    fetch_status: blocked
+    notes: "Scanned PDF, no text layer: 65 pages extract to 64 characters. Needs OCR."
+
+  - id: karnataka-shops-rules
+    publisher: Department of Labour, Government of Karnataka
+    title: Karnataka Shops and Commercial Establishments Rules, 1963
+    url: https://karmikaspandana.karnataka.gov.in/storage/pdf-files/circulars/shopactRules.pdf
+    authority_tier: 1
+    domains: [labour]
+    states: [KA]
+    license: "Government of Karnataka website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 365
+    fetch_status: blocked
+    notes: "Scanned PDF, no text layer: 232 pages extract to 231 characters. Needs OCR."
+
+  - id: maharashtra-shops-rules
+    publisher: Labour Department, Government of Maharashtra
+    title: Maharashtra Shops and Establishments (Regulation of Employment and Conditions of Service) Rules, 2018
+    url: https://mahakamgar.maharashtra.gov.in/Site/Upload/PDF/Regulation_of_Employment_Conditions_of_Service_Rules_2018.pdf
+    authority_tier: 1
+    domains: [labour]
+    states: [MH]
+    license: "Government of Maharashtra website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 365
+    fetch_status: blocked
+    notes: >-
+      Has a text layer (100 pages, 680k characters) but it is Marathi in a
+      legacy non-Unicode font, so extraction returns mojibake. Needs
+      legacy-font transcoding, and then the corpus would hold Marathi text an
+      English embedder and reranker handle poorly - a second, separate problem.
+
   # ----------------------------- NSWS APPROVAL PAGES: MEASURED AND EXCLUDED
   #
   # The nine entries below were collected, indexed, and then removed on the
