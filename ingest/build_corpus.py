@@ -22,7 +22,12 @@ from sources.loader import Allowlist, load_allowlist
 
 log = structlog.get_logger(__name__)
 
-CORPUS_DIR = Path("data/corpus")
+# Anchored to the package root, not the working directory. The service and the
+# CLI are both launched from wherever the user happens to be, and a corpus that
+# only loads when cwd is the repo root fails as "no corpus on disk" - which
+# looks like a missing build rather than a path bug.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CORPUS_DIR = PROJECT_ROOT / "data" / "corpus"
 SPANS_PATH = CORPUS_DIR / "spans.jsonl"
 
 

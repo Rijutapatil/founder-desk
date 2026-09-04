@@ -60,3 +60,48 @@ def test_ask_refuses_rather_than_guessing(client) -> None:
 
 def test_a_blank_question_is_rejected(client) -> None:
     assert client.post("/ask", json={"question": "x"}).status_code == 422
+
+
+class TestChat:
+    """The session endpoint. Sessions are per-process and die with it."""
+
+    def test_a_clarifying_question_can_be_answered_over_two_calls(self, client) -> None:
+        if not load_spans():
+            pytest.skip("no corpus")
+        session = {"session_id": "test-clarify"}
+        first = client.post(
+            "/chat", json={**session, "message": "do I need shops and establishment registration"}
+        ).json()
+        assert first["answer"]["kind"] == "clarify"
+
+        second = client.post("/chat", json={**session, "message": "Maharashtra"}).json()
+        assert second["resolved_from_pending"] is True
+        assert "state: MH" in second["known"]
+
+    def test_sessions_do_not_leak_into_each_other(self, client) -> None:
+        if not load_spans():
+            pytest.skip("no corpus")
+        client.post(
+            "/chat", json={"session_id": "a", "message": "do I need GST registration in Karnataka"}
+        )
+        other = client.post(
+            "/chat", json={"session_id": "b", "message": "can an OPC get startup india benefits"}
+        ).json()
+        assert "KA" not in other["known"]
+
+    def test_reset_clears_a_session(self, client) -> None:
+        if not load_spans():
+            pytest.skip("no corpus")
+        client.post(
+            "/chat", json={"session_id": "c", "message": "do I need GST registration in Karnataka"}
+        )
+        client.post("/chat/reset", params={"session_id": "c"})
+        after = client.post(
+            "/chat", json={"session_id": "c", "message": "can an OPC get startup india benefits"}
+        ).json()
+        assert "KA" not in after["known"]
+
+    def test_the_page_is_served(self, client) -> None:
+        response = client.get("/")
+        assert response.status_code == 200
+        assert "founder-desk" in response.text

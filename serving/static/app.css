@@ -1,0 +1,379 @@
+/* founder-desk — municipal enamel signage.
+   The world and its rules live in DESIGN.md. Colour is a closed legend: every
+   hue below means exactly one thing, and --signal is reserved for the active
+   plate and focus. State is carried in edge line-form as well as colour, so the
+   coding survives greyscale. */
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/barlow-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/static/fonts/barlow-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/static/fonts/barlow-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/static/fonts/barlow-700.woff2") format("woff2");
+}
+
+:root {
+  --enamel: #0d2438;
+  --enamel-deep: #081827;
+  --enamel-rim: #1d3d5a;
+  --porcelain: #f4efe4;
+  --porcelain-shade: #e6dfd0;
+  --ink: #191713;
+  --ink-soft: #6b6255;
+  --cream: #e8e2d4;
+  --cream-soft: #9fb0c1;
+
+  --tier-statute: #7d2b23;
+  --tier-instrument: #a8722a;
+  --tier-guidance: #2e6a4a;
+  --signal: #d4491f;
+
+  --step-0: 1rem;
+  --step-1: 1.2rem;
+  --step-2: 1.44rem;
+  --step--1: 0.833rem;
+  --step--2: 0.694rem;
+
+  --plate-radius: 14px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: dark;
+  accent-color: var(--signal);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--enamel);
+  color: var(--cream);
+  /* Barlow, self-hosted. A low-contrast grotesque whose design is rooted in
+     public-signage lettering - the same tradition the enamel plates come from -
+     so the face is part of the world rather than a product-UI default. Four
+     weights, latin subset, 62 KB total, served locally: no third-party request
+     and it renders offline. */
+  font-family: "Barlow", ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--step-0);
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Browser surfaces belong to the design, not to the browser. */
+::selection { background: var(--signal); color: #fff; }
+:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 3px; }
+* { scrollbar-color: var(--enamel-rim) var(--enamel-deep); scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--enamel-deep); }
+::-webkit-scrollbar-thumb { background: var(--enamel-rim); border-radius: 6px; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.skip {
+  position: absolute; left: 50%; translate: -50% -120%;
+  background: var(--porcelain); color: var(--ink);
+  padding: 0.6rem 1rem; border-radius: 0 0 8px 8px; z-index: 5;
+  text-decoration: none; font-weight: 600;
+}
+.skip:focus { translate: -50% 0; }
+
+/* ---------------------------------------------------------------- masthead */
+
+.masthead {
+  padding: 2.25rem 1.5rem 1rem;
+  max-width: 74ch;
+  margin-inline: auto;
+  width: 100%;
+}
+.masthead h1 {
+  margin: 0;
+  font-size: var(--step-2);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  color: #fff;
+}
+.masthead__sub {
+  margin: 0.35rem 0 0;
+  color: var(--cream-soft);
+  font-size: var(--step--1);
+  max-width: 62ch;
+}
+.masthead__known {
+  margin: 1.1rem 0 0;
+  font-size: var(--step--2);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cream-soft);
+  border-top: 1px solid var(--enamel-rim);
+  padding-top: 0.7rem;
+}
+/* The established-facts line stays cream: --signal on the enamel ground reaches
+   only 3.60:1, under the 4.5 floor for text this size. A solid marker carries
+   the state instead, where the 3:1 non-text floor applies - and this keeps
+   --signal to its reserved role of marking the active plate and focus. */
+.masthead__known[data-established="yes"] {
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.masthead__known[data-established="yes"]::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: var(--signal);
+  flex: none;
+}
+
+/* ------------------------------------------------------------------- field */
+
+html { scroll-padding-bottom: 14rem; }
+
+.field {
+  max-width: 74ch;
+  width: 100%;
+  margin-inline: auto;
+  /* Clears the sticky rail so the last plate is never half-hidden behind it. */
+  padding: 0.5rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.turn__question {
+  margin: 0 0 0.85rem;
+  font-size: var(--step-1);
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: -0.015em;
+  max-width: 60ch;
+}
+.turn__resolved {
+  margin: -0.55rem 0 0.85rem;
+  font-size: var(--step--2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+
+.turn__question::before {
+  content: "";
+  display: block;
+  width: 26px;
+  height: 3px;
+  background: var(--signal);
+  margin-bottom: 0.7rem;
+}
+
+/* ------------------------------------------------------------------- plate */
+
+.plate {
+  position: relative;
+  border-radius: var(--plate-radius);
+  background: var(--porcelain);
+  color: var(--ink);
+  box-shadow: 0 10px 26px -8px rgb(0 0 0 / 0.55);
+  overflow: hidden;
+  /* The fired rim. Line-form carries state; see [data-state]. */
+  outline: 3px solid var(--enamel-rim);
+  outline-offset: -3px;
+}
+.plate[data-state="stale"] { outline-style: dashed; }
+.plate[data-state="superseded"] { outline-style: double; outline-width: 5px; }
+.plate[data-active="yes"] { outline-color: var(--signal); }
+
+.plate__band {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 1.15rem;
+  background: var(--enamel-rim);
+  color: var(--cream);
+  font-size: var(--step--2);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.plate__band[data-tier="1"] { background: var(--tier-statute); }
+.plate__band[data-tier="2"] { background: var(--tier-instrument); color: #1b1206; }
+.plate__band[data-tier="3"] { background: var(--tier-guidance); }
+.plate__tier { font-weight: 700; }
+.plate__publisher { opacity: 0.85; letter-spacing: 0.05em; text-transform: none; }
+
+.plate__face { padding: 1.35rem 1.5rem 1.15rem; position: relative; }
+
+.plate__applies {
+  margin: 0 0 1rem;
+  font-size: var(--step--2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.plate__body p { margin: 0 0 0.95rem; max-width: 70ch; }
+.plate__body p:last-child { margin-bottom: 0; }
+.plate__body .quote { font-size: var(--step-0); }
+.plate__body .ask {
+  font-size: var(--step-1);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  max-width: 56ch;
+}
+.plate__body .factor { margin-bottom: 0.6rem; padding-left: 1.1rem; position: relative; }
+.plate__body .factor::before {
+  content: ""; position: absolute; left: 0; top: 0.62em;
+  width: 6px; height: 6px; background: var(--ink-soft);
+}
+
+/* Refusal: a struck plate. The unlit state is designed. */
+.plate[data-kind="refused"] .plate__face { position: relative; }
+.plate[data-kind="refused"] .plate__face::before {
+  content: ""; position: absolute; inset-inline: 0; top: 2.3rem; height: 3px;
+  background: var(--tier-statute); opacity: 0.55;
+}
+.plate__searched {
+  margin: 1rem 0 0; padding: 0; list-style: none;
+  font-size: var(--step--1); color: var(--ink-soft);
+  columns: 2; column-gap: 1.6rem;
+}
+.plate__searched li { break-inside: avoid; margin-bottom: 0.3rem; }
+
+/* Citations rivet beneath the face as small code plates. */
+.plate__cites { margin: 1.25rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
+.plate__cites:empty { display: none; }
+.cite {
+  border-top: 1px solid var(--porcelain-shade);
+  padding-top: 0.6rem;
+  font-size: var(--step--1);
+}
+.cite__title { display: block; color: var(--ink); }
+.cite__meta { display: block; color: var(--ink-soft); font-size: var(--step--2); margin-top: 0.15rem; }
+.cite a { color: var(--ink); text-decoration-color: var(--ink-soft); text-underline-offset: 3px; }
+.cite a:hover { text-decoration-color: var(--signal); }
+.cite[data-state="stale"] .cite__meta::after {
+  content: " · past its refresh window"; color: var(--tier-statute); font-weight: 600;
+}
+
+/* Loading: the plate arrives before its text. Not a spinner. */
+.plate--pending .plate__face { min-height: 8.5rem; }
+.skeleton {
+  height: 0.95rem; border-radius: 3px; background: var(--porcelain-shade);
+  margin-bottom: 0.7rem; animation: breathe 1.4s ease-in-out infinite;
+}
+.skeleton:nth-child(2) { width: 92%; animation-delay: 0.1s; }
+.skeleton:nth-child(3) { width: 64%; animation-delay: 0.2s; }
+@keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.rivet {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--porcelain-shade); box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.35);
+}
+/* Anchored to the plate face, not the plate. The band wraps to two lines on
+   narrow screens, and rivets positioned from the plate's top edge ended up
+   sitting on the coloured band. */
+.rivet--tl { left: 9px; top: 9px; }
+.rivet--tr { right: 9px; top: 9px; }
+.rivet--bl { left: 9px; bottom: 9px; }
+.rivet--br { right: 9px; bottom: 9px; }
+
+/* --------------------------------------------------------------- empty state */
+
+.opening { color: var(--cream-soft); max-width: 62ch; }
+.opening h2 {
+  margin: 0 0 0.6rem; font-size: var(--step-1); font-weight: 600;
+  color: #fff; letter-spacing: -0.015em;
+}
+.opening ul { margin: 1rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.5rem; }
+.opening button {
+  background: none; border: 1px solid var(--enamel-rim); color: var(--cream);
+  border-radius: 8px; padding: 0.6rem 0.85rem; font: inherit; font-size: var(--step--1);
+  text-align: left; cursor: pointer; width: 100%;
+  transition: border-color 160ms var(--ease), color 160ms var(--ease);
+}
+.opening button:hover { border-color: var(--signal); color: #fff; }
+
+/* -------------------------------------------------------------------- rail */
+
+.rail {
+  position: sticky; bottom: 0;
+  background: var(--enamel-deep);
+  border-top: 1px solid var(--enamel-rim);
+  padding: 1rem 1.5rem 1.25rem;
+}
+.ask {
+  max-width: 74ch; margin-inline: auto; display: flex; gap: 0.6rem;
+}
+.ask input {
+  flex: 1; min-width: 0;
+  background: var(--enamel); color: var(--cream);
+  border: 1px solid var(--enamel-rim); border-radius: 10px;
+  padding: 0.8rem 0.95rem; font: inherit;
+  caret-color: var(--signal);
+  transition: border-color 160ms var(--ease);
+}
+.ask input::placeholder { color: #7d8fa1; }
+.ask input:hover { border-color: #2a5478; }
+.ask button {
+  flex: none; width: 46px; border-radius: 10px; cursor: pointer;
+  background: var(--signal); color: #fff; border: none;
+  display: grid; place-items: center;
+  transition: background 160ms var(--ease);
+}
+.ask button svg { width: 20px; height: 20px; }
+.ask button:hover { background: #b93d17; }
+.ask button:disabled { background: var(--enamel-rim); color: #7d8fa1; cursor: not-allowed; }
+
+.legend {
+  max-width: 74ch; margin: 1rem auto 0; display: flex; flex-wrap: wrap;
+  gap: 0.4rem 1.4rem; font-size: var(--step--2); color: var(--cream-soft);
+}
+.legend div { display: flex; align-items: baseline; gap: 0.45rem; }
+.legend dt { display: flex; align-items: center; gap: 0.4rem; }
+.legend dd { margin: 0; opacity: 0.65; }
+.key { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+.key--statute { background: var(--tier-statute); }
+.key--instrument { background: var(--tier-instrument); }
+.key--guidance { background: var(--tier-guidance); }
+.key--edge { border: 2px dashed var(--cream-soft); border-radius: 2px; }
+
+.disclaimer {
+  max-width: 74ch; margin: 0.9rem auto 0;
+  font-size: var(--step--2); line-height: 1.5; color: #7d8fa1;
+}
+
+@media (max-width: 620px) {
+  .masthead, .field, .rail { padding-inline: 1rem; }
+  .plate__searched { columns: 1; }
+  .legend { gap: 0.35rem 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

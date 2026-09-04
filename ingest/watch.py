@@ -33,7 +33,7 @@ from ingest.build_corpus import load_spans
 from ingest.fetch import Fetcher
 from sources.loader import load_allowlist
 
-FRESHNESS_PATH = Path("sources/freshness.json")
+FRESHNESS_PATH = Path(__file__).resolve().parent.parent / "sources" / "freshness.json"
 
 
 @dataclass(frozen=True)

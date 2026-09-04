@@ -34,7 +34,7 @@ from typing import Any
 
 from agent.schema import AnswerKind
 
-DEFAULT_BASELINE = Path("eval/baseline_metrics.json")
+DEFAULT_BASELINE = Path(__file__).resolve().parent / "baseline_metrics.json"
 
 ACCURACY_TOLERANCE = 0.02
 OVER_REFUSAL_TOLERANCE = 0.05

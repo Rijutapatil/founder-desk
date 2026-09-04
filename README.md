@@ -614,9 +614,31 @@ founder-desk ask "do I need professional tax registration" --state MH
 founder-desk sources
 ```
 
-Optional extras: `.[rerank]` for the cross-encoder, `.[serving]` for the API
-(`uvicorn serving.app:app`, with `/ask`, `/sources`, `/health`, `/ready`), and
-`.[browser]` plus `playwright install chromium` for the client-rendered sources.
+### The chat interface
+
+```bash
+founder-desk chat                        # a session at the terminal
+```
+
+```bash
+pip install -e ".[serving]" && uvicorn serving.app:app --port 8123
+```
+
+Then open `http://localhost:8123`. Both are sessions rather than one-shot
+queries, which is what makes the clarifying question usable — "do I need shops
+and establishment registration?" → *"which state is the registered office in?"* →
+"Maharashtra" → the answer. Facts you state carry forward, and only facts you
+state: nothing is inferred.
+
+The web UI is [municipal enamel signage](DESIGN.md). Every answer is a plate; the
+coloured band is the authority tier of what it quotes; the plate's edge carries
+freshness in line form as well as colour, so the coding survives greyscale. A
+refusal is a struck plate that names what was searched. Sessions live in memory
+and die with the process — nothing about your company is written to disk.
+
+Other extras: `.[rerank]` for the cross-encoder (**recommended** — it is the
+refusal gate), `.[browser]` plus `playwright install chromium` for the
+client-rendered sources.
 
 ## Layout
 
@@ -626,8 +648,11 @@ ingest/      fetch, parse, persist, and the freshness watcher
 agent/       router, answerer, output contract
 agent/retrieval/  hybrid store, hashing embedder, reranker protocol
 eval/        question set, metrics, groundedness judge, CI gate
-serving/     CLI and FastAPI service
+serving/     CLI, chat REPL, FastAPI service, and the web UI
 ```
+
+Design decisions for the web UI live in [DESIGN.md](DESIGN.md); durable product
+truth in [PRODUCT.md](PRODUCT.md).
 
 ## Status
 
@@ -640,6 +665,7 @@ serving/     CLI and FastAPI service
 | Cross-encoder reranking | ✅ measured (opt-in) |
 | Router, clarify, judgement guard | ✅ measured |
 | Refusal gate (lexical + cross-encoder) | ✅ measured, both baselines gated |
+| Chat: terminal REPL + local web UI | ✅ built and exercised in a browser |
 | Evaluation + CI gate | ✅ measured |
 | ESIC via pinned intermediate certificate | ✅ measured |
 | Headless rendering (optional extra) | ✅ measured |
@@ -649,7 +675,7 @@ serving/     CLI and FastAPI service
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-145 tests · `ruff` · `mypy --strict`
+164 tests · `ruff` · `mypy --strict`
 
 ## Licence
 

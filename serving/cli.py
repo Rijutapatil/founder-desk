@@ -12,7 +12,7 @@ import argparse
 import sys
 import textwrap
 
-from agent.answerer import build_answerer
+from agent.answerer import Answerer, build_answerer
 from agent.retrieval.rerank import load_reranker
 from agent.schema import Answer, AnswerKind, AuthorityTier, EntityType, SpanStatus
 
@@ -78,6 +78,43 @@ def render(answer: Answer) -> str:
     return "\n".join(out)
 
 
+def run_chat(answerer: Answerer, *, state: str | None, entity: str | None) -> int:
+    """A session at the terminal.
+
+    The reason this exists rather than repeated `ask` calls: a clarifying
+    question is unanswerable in a one-shot interface. "Which state is the
+    registered office in?" has nowhere to put the reply, so the founder has to
+    retype the whole question with --state. Here the next line answers it.
+    """
+    from agent.conversation import Conversation
+
+    conversation = Conversation(
+        answerer, state=state, entity=EntityType(entity) if entity else None
+    )
+    print("\n  founder-desk — type a question, or 'reset' to forget what you have told me.")
+    print("  Ctrl-D to leave.\n")
+
+    while True:
+        try:
+            message = input("  > ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return 0
+        if not message:
+            continue
+        if message.lower() in {"reset", "forget"}:
+            conversation.reset()
+            print("  (forgotten)\n")
+            continue
+
+        turn = conversation.ask(message)
+        if turn.resolved_from_pending:
+            print(f"  answering: {turn.question}")
+        print(render(turn.answer))
+        if conversation.known != "nothing established yet":
+            print(f"  remembering — {conversation.known}\n")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="founder-desk", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -87,6 +124,11 @@ def main() -> int:
     ask.add_argument("--state", help="ISO 3166-2:IN code, e.g. MH, KA, DL")
     ask.add_argument("--entity", choices=[e.value for e in EntityType])
     ask.add_argument("--reranker", default="auto", choices=("auto", "identity", "cross-encoder"))
+
+    chat = sub.add_parser("chat", help="a session: clarifying questions can be answered")
+    chat.add_argument("--state", help="ISO 3166-2:IN code, e.g. MH")
+    chat.add_argument("--entity", choices=[e.value for e in EntityType])
+    chat.add_argument("--reranker", default="auto", choices=("auto", "identity", "cross-encoder"))
 
     sub.add_parser("sources", help="list the allowlisted sources")
 
@@ -107,6 +149,9 @@ def main() -> int:
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+
+    if args.command == "chat":
+        return run_chat(answerer, state=args.state, entity=args.entity)
 
     if not answerer.reranker.name.startswith("cross-encoder"):
         # Not a nag: without the cross-encoder the refusal gate falls back to a

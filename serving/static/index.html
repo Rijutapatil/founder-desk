@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>founder-desk</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d2438'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='%23f4efe4'/%3E%3Crect x='6' y='9' width='20' height='4' rx='2' fill='%23d4491f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<a class="skip" href="#ask">Skip to the question field</a>
+
+<header class="masthead">
+  <h1>founder-desk</h1>
+  <p class="masthead__sub">First-year compliance for a new Indian company, quoted from the source.</p>
+  <p class="masthead__known" id="known" aria-live="polite">nothing established yet</p>
+</header>
+
+<main class="field" id="thread" aria-live="polite" aria-label="Conversation"></main>
+
+<footer class="rail">
+  <form class="ask" id="ask-form">
+    <label class="visually-hidden" for="ask">Your question</label>
+    <input id="ask" name="ask" type="text" autocomplete="off" maxlength="500" required
+           placeholder="Do I need GST registration before my first sale?">
+    <button type="submit" id="send">
+      <span class="visually-hidden">Send question</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="square"/>
+      </svg>
+    </button>
+  </form>
+
+  <dl class="legend" aria-label="What the plate markings mean">
+    <div><dt><i class="key key--statute"></i>Act or Rules</dt><dd lang="hi">अधिनियम</dd></div>
+    <div><dt><i class="key key--instrument"></i>Notification</dt><dd lang="hi">अधिसूचना</dd></div>
+    <div><dt><i class="key key--guidance"></i>Official guidance</dt><dd lang="hi">मार्गदर्शन</dd></div>
+    <div><dt><i class="key key--edge"></i>Dashed edge — past its refresh window</dt><dd lang="hi">पुराना</dd></div>
+  </dl>
+
+  <p class="disclaimer">
+    Information grounded in primary sources — not professional advice. Quotes are reproduced
+    from official government publications and may have been amended since they were fetched.
+    Nothing here replaces a qualified chartered accountant, company secretary or lawyer.
+  </p>
+</footer>
+
+<template id="tpl-plate">
+  <article class="plate">
+    <div class="plate__band"><span class="plate__tier"></span><span class="plate__publisher"></span></div>
+    <div class="plate__face">
+      <p class="plate__applies"></p>
+      <div class="plate__body"></div>
+      <ul class="plate__cites"></ul>
+      <i class="rivet rivet--tl" aria-hidden="true"></i><i class="rivet rivet--tr" aria-hidden="true"></i>
+      <i class="rivet rivet--bl" aria-hidden="true"></i><i class="rivet rivet--br" aria-hidden="true"></i>
+    </div>
+  </article>
+</template>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

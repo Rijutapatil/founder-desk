@@ -8,3 +8,4 @@ __pycache__/
 # Raw fetched documents are large and fully regenerable from sources.yaml.
 data/raw/
 data/cache/
+.impeccable/

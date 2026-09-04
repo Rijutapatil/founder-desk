@@ -41,7 +41,7 @@ log = structlog.get_logger(__name__)
 
 USER_AGENT = "founder-desk/0.1 (portfolio research project; contact: preety.rijuta@gmail.com)"
 REQUESTS_PER_SECOND = 1.0
-DEFAULT_CACHE = Path("data/raw")
+DEFAULT_CACHE = Path(__file__).resolve().parent.parent / "data" / "raw"
 
 _WS = re.compile(r"\s+")
 
