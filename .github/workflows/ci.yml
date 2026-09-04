@@ -50,12 +50,40 @@ jobs:
       - name: Install
         run: pip install -e ".[dev,ingest]"
 
-      # Runs the model-free retrieval baseline against the committed corpus: no
-      # API key, no billing, no network. That is what makes it affordable to gate
+      # Runs the model-free path against the committed corpus: no API key, no
+      # billing, no network, no torch. That is what makes it affordable to gate
       # *every* pull request rather than only the ones where someone remembers to
       # run an eval - and a gate too expensive to run is a gate that gets disabled.
-      - name: Quality gate
-        run: python -m eval.gate_cli
+      - name: Quality gate (lexical, free)
+        run: python -m eval.gate_cli --reranker identity
+
+  quality-gate-reranked:
+    name: quality regression gate (cross-encoder)
+    runs-on: ubuntu-latest
+    # The system that actually ships when the reranking extra is installed, and a
+    # materially different one: refusal accuracy 0.654 against 0.385. Gating only
+    # the cheap path would mean the numbers in the README describe something CI
+    # never checks. It runs on main rather than per-PR because it pulls ~2 GB of
+    # torch and a model download.
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev,ingest,rerank]"
+
+      - name: Cache the reranker model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-bge-reranker-base
+
+      - name: Quality gate (cross-encoder)
+        run: python -m eval.gate_cli --reranker cross-encoder
 
   freshness:
     name: source freshness

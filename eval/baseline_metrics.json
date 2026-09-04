@@ -1,6 +1,6 @@
 {
-  "system": "nearest-faq",
-  "n": 68,
+  "system": "nearest-faq+identity",
+  "n": 82,
   "cost_per_answer": 0.0,
   "retrieval": {
     "recall@1": 0.6363636363636364,
@@ -8,13 +8,14 @@
     "mrr": 0.7343073593073594
   },
   "routing": {
-    "overall": 0.8529411764705882,
-    "over_refusal": 0.13636363636363635
+    "overall": 0.7317073170731707,
+    "over_refusal": 0.13636363636363635,
+    "refused": 0.38461538461538464
   },
   "grounding": {
     "faithful": 1.0,
     "fabricated": 0.0,
     "unofficial": 0.0,
-    "n_citations": 78
+    "n_citations": 94
   }
 }

@@ -1,15 +1,26 @@
 """CI entry point for the quality gate.
 
-Runs the zero-cost retrieval baseline, compares it to the committed baseline
-metrics, and exits non-zero on regression.
+Compares a fresh run to a committed baseline and exits non-zero on regression.
 
-Only the model-free system is gated per-commit, deliberately: it needs no API
-key, no billing and no network, so *every* pull request is checked rather than
-only the ones where someone remembers to run an eval.
+Two systems are gated, against two committed baselines, because the project ships
+two refusal gates:
+
+* ``--reranker identity`` is the model-free path: no key, no billing, no
+  network, no torch. It runs on **every pull request**, because a gate that is
+  expensive is a gate that eventually gets disabled.
+* ``--reranker cross-encoder`` is what actually ships when the reranking extra
+  is installed, and it is a materially different system - refusal accuracy 0.654
+  against 0.385. It is gated too, on pushes to main rather than per-PR, because
+  it needs a 2 GB dependency and a model download.
+
+Gating only the cheap one would mean the numbers in the README describe a system
+CI never checks. Gating only the real one would mean contributors cannot run the
+gate. So both, at different frequencies.
 
 Usage::
 
     python -m eval.gate_cli
+    python -m eval.gate_cli --reranker cross-encoder
     python -m eval.gate_cli --update    # accept the current run as the baseline
 """
 
@@ -19,8 +30,9 @@ import argparse
 import sys
 from pathlib import Path
 
+from agent.answerer import build_answerer
+from agent.retrieval.rerank import load_reranker
 from agent.router import route
-from eval.baselines.retrieval import nearest_faq_baseline
 from eval.dataset import load_examples
 from eval.gate import DEFAULT_BASELINE, compare_to_baseline, load_baseline, snapshot, write_baseline
 from eval.groundedness import GroundednessReport, check_answer
@@ -30,9 +42,16 @@ from ingest.build_corpus import load_spans
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE)
+    parser.add_argument("--reranker", default="identity", choices=("identity", "cross-encoder"))
+    parser.add_argument("--baseline", type=Path, default=None)
     parser.add_argument("--update", action="store_true")
     args = parser.parse_args()
+
+    baseline_path = args.baseline or (
+        DEFAULT_BASELINE
+        if args.reranker == "identity"
+        else DEFAULT_BASELINE.with_name("baseline_metrics_reranked.json")
+    )
 
     if not load_spans():
         # A fresh clone with no built corpus. Skipping is correct: failing here
@@ -41,8 +60,13 @@ def main() -> int:
         return 0
 
     examples = load_examples()
-    answerer = nearest_faq_baseline()
-    report = evaluate(answerer, examples, system="nearest-faq")
+    try:
+        answerer = build_answerer(load_reranker(args.reranker))
+    except ImportError as exc:
+        print(f"cannot run the {args.reranker} gate: {exc}")
+        return 0
+    system = f"nearest-faq+{args.reranker}"
+    report = evaluate(answerer, examples, system=system)
 
     grounding = GroundednessReport()
     for example in examples:
@@ -54,17 +78,17 @@ def main() -> int:
             check_answer(answer, retrieved=retrieved, allowlist=answerer.allowlist)
         )
 
-    current = snapshot(report, grounding, system="nearest-faq")
+    current = snapshot(report, grounding, system=system)
 
     if args.update:
-        write_baseline(current, args.baseline)
-        print(f"baseline updated -> {args.baseline}")
+        write_baseline(current, baseline_path)
+        print(f"baseline updated -> {baseline_path}")
         return 0
 
-    previous = load_baseline(args.baseline)
+    previous = load_baseline(baseline_path)
     if previous is None:
-        write_baseline(current, args.baseline)
-        print(f"no baseline found; wrote initial baseline -> {args.baseline}")
+        write_baseline(current, baseline_path)
+        print(f"no baseline found; wrote initial baseline -> {baseline_path}")
         return 0
 
     gate = compare_to_baseline(current, previous)

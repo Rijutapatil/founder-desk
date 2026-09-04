@@ -62,6 +62,27 @@ from sources.loader import Allowlist
 # rephrase; a wrong answer about a filing deadline costs them a penalty.
 MIN_COVERAGE = 0.28
 
+# The cross-encoder gate, used whenever the reranking extra is installed.
+#
+# This is the better signal and the measurement is not close. A cross-encoder
+# scores the question and the span *jointly*, so unlike every lexical statistic
+# it produces an absolute answer to "is this span about what was asked" rather
+# than "how much vocabulary do these share". Swept over the evaluation set:
+#
+#            gate            grounded   refused   overall
+#     coverage (lexical)       0.864     0.385     0.686
+#     cross-encoder @ 0.05     0.977     0.692     0.871
+#
+# Note that it improves *both* numbers. Every lexical rule tried - raw BM25, a
+# discriminative-term match, a joint grid search over three parameters - could
+# only trade one against the other, because vocabulary overlap and topical
+# relevance are not the same quantity and no threshold on the first recovers the
+# second.
+#
+# The score costs nothing extra: it is the reranker's own output, already
+# computed for ordering.
+MIN_RELEVANCE = 0.05
+
 # Retrieve wide, answer narrow. A reranker can only reorder what the first stage
 # returned, so the candidate pool is its ceiling.
 CANDIDATE_K = 20
@@ -90,6 +111,7 @@ class Answerer:
         candidate_k: int = CANDIDATE_K,
         answer_k: int = ANSWER_K,
         min_coverage: float = MIN_COVERAGE,
+        min_relevance: float = MIN_RELEVANCE,
     ) -> None:
         self.store = store
         self.allowlist = allowlist
@@ -97,6 +119,7 @@ class Answerer:
         self.candidate_k = candidate_k
         self.answer_k = answer_k
         self.min_coverage = min_coverage
+        self.min_relevance = min_relevance
 
     # -- helpers ---------------------------------------------------------
 
@@ -148,6 +171,18 @@ class Answerer:
         """
         if not candidates:
             return []
+
+        # Preferred path: the reranker scored these jointly, so gate on that.
+        if ranked and ranked[0].rerank_score is not None:
+            best_relevance = max(h.rerank_score or 0.0 for h in ranked)
+            if best_relevance < self.min_relevance:
+                return []
+            return [
+                h for h in ranked if (h.rerank_score or 0.0) >= self.RELATIVE_FLOOR * best_relevance
+            ]
+
+        # Lexical fallback, used when the reranking extra is not installed.
+        # Measurably weaker at refusing - see MIN_RELEVANCE - so the CLI says so.
         # Gate on the first-stage top-k, not the whole candidate pool. The pool
         # is 20 spans deep to give the reranker room, and somewhere in 20 spans
         # there is nearly always one sharing enough vocabulary to clear the
@@ -248,7 +283,15 @@ class Answerer:
 
 
 def build_answerer(reranker: Reranker | None = None) -> Answerer:
-    """Assemble from the built corpus on disk."""
+    """Assemble from the built corpus on disk.
+
+    With no reranker named, the best available one is used: the cross-encoder if
+    the reranking extra is installed, the no-op otherwise. That default is about
+    *refusal quality*, not ranking - the cross-encoder is what lets the system
+    tell "the corpus does not cover this" from "these words appear nearby", and
+    in a compliance tool that distinction matters more than ordering does.
+    """
+    from agent.retrieval.rerank import best_available_reranker
     from agent.retrieval.store import build_store
     from ingest.build_corpus import load_spans
     from sources.loader import load_allowlist
@@ -256,4 +299,8 @@ def build_answerer(reranker: Reranker | None = None) -> Answerer:
     spans = load_spans()
     if not spans:
         raise RuntimeError("no corpus on disk - run: python -m ingest.build_corpus")
-    return Answerer(build_store(spans), load_allowlist(), reranker=reranker)
+    return Answerer(
+        build_store(spans),
+        load_allowlist(),
+        reranker=reranker if reranker is not None else best_available_reranker(),
+    )

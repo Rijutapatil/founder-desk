@@ -32,6 +32,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from agent.schema import AnswerKind
+
 DEFAULT_BASELINE = Path("eval/baseline_metrics.json")
 
 ACCURACY_TOLERANCE = 0.02
@@ -86,6 +88,7 @@ def snapshot(report: Any, grounding: Any, *, system: str) -> dict[str, Any]:
         "routing": {
             "overall": report.routing.accuracy,
             "over_refusal": report.routing.over_refusal,
+            "refused": report.routing.accuracy_for(AnswerKind.REFUSED),
         },
         "grounding": {
             "faithful": grounding.faithful_rate,
@@ -114,6 +117,7 @@ def compare_to_baseline(current: dict[str, Any], baseline: dict[str, Any]) -> Ga
         ("retrieval", "recall@5"),
         ("retrieval", "mrr"),
         ("routing", "overall"),
+        ("routing", "refused"),
         ("grounding", "faithful"),
     ):
         base = baseline.get(group, {}).get(key)

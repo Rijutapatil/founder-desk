@@ -173,6 +173,24 @@ refused:
   - q: "What is the best CRM software for an early stage startup?"
   - q: "How do I train a neural network on a small dataset?"
   - q: "Who won the cricket world cup?"
+  # Rephrasings of the cases above. The gate is lexical, so a question can be
+  # rewritten to share more vocabulary with the corpus while asking exactly the
+  # same unanswerable thing. These are the adversarial half of the refusal set:
+  # every one of them defeated the coverage gate at the time it was added.
+  - q: "how much does it cost to trademark a logo in India"
+  - q: "what is the fee for registering a company trademark"
+  - q: "how do I open a company bank account outside India"
+  - q: "what is the process for a food business licence"
+  - q: "how soon after incorporation must a company file its declaration of commencement"
+  - q: "what is the late filing penalty for annual company accounts"
+  - q: "how many people must be on the board of a private company"
+  - q: "what is the minimum paid up capital for a private limited company"
+  - q: "how do I appoint the first auditor of a new company"
+  - q: "what is a DIN and how do I get one for a director"
+  - q: "how do I reserve a company name before incorporation"
+  - q: "what documents make up the MOA and AOA of a company"
+  - q: "which software should a startup use to manage its customers"
+  - q: "what visa does a foreign director need to visit India"
 
 clarify:
   - q: "Do I need shops and establishment registration?"

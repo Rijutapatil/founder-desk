@@ -6,7 +6,7 @@ import argparse
 import sys
 from dataclasses import dataclass, field
 
-from agent.answerer import MIN_COVERAGE, Answerer, build_answerer
+from agent.answerer import Answerer, build_answerer
 from agent.retrieval.rerank import Reranker, load_reranker
 from agent.router import route
 from agent.schema import AnswerKind
@@ -98,7 +98,7 @@ def sweep_coverage(examples: list[Example], reranker: Reranker | None = None) ->
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--reranker", default="identity")
+    parser.add_argument("--reranker", default="auto", choices=("auto", "identity", "cross-encoder"))
     parser.add_argument("--compare-rerank", action="store_true", help="identity vs cross-encoder")
     parser.add_argument("--sweep", action="store_true", help="sweep the refusal threshold")
     parser.add_argument("--misses", action="store_true", help="list retrieval misses")
@@ -122,8 +122,10 @@ def main() -> int:
             print(report.summary())
         return 0
 
-    answerer = build_answerer(load_reranker(args.reranker))
-    report = evaluate(answerer, examples, system=f"{args.reranker}@cov{MIN_COVERAGE}")
+    reranker = load_reranker(args.reranker)
+    answerer = build_answerer(reranker)
+    gate = "relevance" if reranker.name.startswith("cross-encoder") else "coverage"
+    report = evaluate(answerer, examples, system=f"{reranker.name} gate={gate}")
     print(report.summary())
     if args.misses and report.misses:
         print("\nretrieval misses (gold not in top 5)")

@@ -156,15 +156,14 @@ founder-desk ask "who won the cricket world cup"
 
 Every example above was run before being written down, and behaves as shown.
 
-**Refusal is the weakest behaviour, and it is worth seeing it fail.** At 0.667 it
-is the lowest number in the evaluation, and it is sensitive to wording: *"How
-much does it cost to register a trademark for a logo in India?"* refuses
-correctly, while *"how much does it cost to trademark a logo in India"* returns
-a definition of a term sheet — a real quote, correctly cited, and no answer to
-the question at all. The refusal gate is lexical, so a rephrasing that shares
-more vocabulary with the corpus can clear it. If you get an answer that quotes
-something beside the point, that is what happened, and the citation will show
-it.
+**Refusal is still the weakest behaviour**, though much less so than it was: at
+0.654 it is the lowest number in the evaluation. What remains is a specific,
+nameable class — questions that are squarely about a topic the corpus covers,
+asking something inside it that the corpus does not contain. "How many people
+must be on the board of a private company" is about incorporation, and the one
+incorporation span *is* about companies; it simply says nothing about boards. No
+relevance score separates those, because the span genuinely is relevant. Telling
+them apart is question-answering, not retrieval.
 
 Add `--state MH` (any ISO 3166-2:IN code) or `--entity pvt-ltd|llp|opc|sole-prop`
 to answer for a specific situation, and `founder-desk sources` to see every
@@ -384,38 +383,85 @@ A round trip to any hosted vector store is 20–50 ms of network before it does
 any work, and an HNSW index would be approximate where this is exact. It would
 cost money and latency for worse recall.
 
+### Fixing the refusal gate
+
+The gate originally measured IDF-weighted vocabulary overlap, and a rephrasing
+could defeat it: *"How much does it cost to register a trademark for a logo in
+India?"* refused correctly while *"how much does it cost to trademark a logo in
+India"* returned a definition of a term sheet — a real quote, correctly cited,
+and no answer to the question.
+
+Two things were needed to fix it, and the first mattered more.
+
+**The refusal set was too easy.** Twelve mostly-obvious out-of-scope questions
+scored 0.667, which flattered the gate. Adding fourteen adversarial cases — every
+rephrasing known to defeat it, plus in-scope-but-uncovered questions like AOC-4
+penalties and minimum paid-up capital — put the true number at **0.385**. The
+first result of the work was the metric getting worse, because it started being
+honest.
+
+**Then: no lexical signal fixes it.** Raw BM25, a discriminative-term match, and
+a joint grid search over three parameters were all measured. The best lexical
+rule scored 0.714 overall against the incumbent's 0.686, and bought it by
+trading answering ability away (grounded 0.864 → 0.705). That is not a fix; it
+is moving the failure. Vocabulary overlap and topical relevance are different
+quantities, and no threshold on the first recovers the second.
+
+**A cross-encoder does fix it, because it measures the right thing.** It scores
+the question and the span jointly, producing an absolute answer to "is this span
+about what was asked":
+
+| gate | grounded | refused | over-refusal | overall |
+|---|---|---|---|---|
+| coverage (lexical) | 0.864 | 0.385 | 0.136 | 0.732 |
+| **cross-encoder @ 0.05** | **0.977** | **0.654** | **0.023** | **0.878** |
+
+It improves *both* directions at once, which is what distinguishes a fix from a
+threshold move. The score costs nothing extra — it is the reranker's own output,
+already computed for ordering — so when the extra is installed, better refusals
+are free.
+
 ### Does the cross-encoder earn its place?
 
-`python -m eval.runner --compare-rerank`, same 68 questions:
+`python -m eval.runner --compare-rerank`, same 82 questions:
 
-| | recall@1 | recall@3 | recall@5 | MRR | routing | latency |
-|---|---|---|---|---|---|---|
-| hybrid only | 0.636 | 0.818 | 0.864 | 0.734 | 0.853 | 0.38 ms |
-| + cross-encoder | **0.727** | **0.886** | **0.932** | **0.805** | 0.853 | 665 ms |
+| | recall@1 | recall@5 | MRR | latency |
+|---|---|---|---|---|
+| hybrid only | 0.636 | 0.864 | 0.734 | 0.38 ms |
+| + cross-encoder | **0.727** | **0.932** | **0.805** | 665 ms |
 
 `BAAI/bge-reranker-base`, CPU. It buys about 9 points of recall@1 for roughly
 1,750× the retrieval latency, plus a 2 GB dependency and a 13-second model load.
-Worth it for a batch or an API with a budget; not worth it for the default path,
-so it is opt-in behind `pip install -e ".[rerank]"` and the base install stays
-light.
+
+On ranking alone that trade would be arguable. It is not arguable once the same
+score is doing the refusal gating above, which is why **the cross-encoder is now
+the default when installed** and the CLI prints a warning when it is not. It
+stays an optional extra because 2 GB is a real imposition for someone who only
+wants to read the code — but an install without it is a measurably weaker
+system, and the README, the CLI and the second CI baseline all say so rather
+than letting the difference pass unnoticed.
 
 Getting this comparison to be *meaningful* required a fix worth describing. When
-the refusal gate read the reranked list, the cross-encoder improved retrieval and
-made routing **worse** (0.862 → 0.815, over-refusal 0.122 → 0.195): it promotes
-spans that are semantically apt but share fewer words with the question, so they
-won the ranking and then failed a lexical gate. "Can this be answered" is a
-property of what was retrieved, not of the order it ended in — so the gate reads
-the first-stage candidates and the reranker only chooses what to quote. Routing
-is now identical across both — 0.853 and 0.136 either way — which is the property
-that makes the row above a fair comparison rather than two different systems.
+the refusal gate read the reranked list while still scoring it lexically, the
+cross-encoder improved retrieval and made routing **worse**: it promotes spans
+that are semantically apt but share fewer words with the question, so they won
+the ranking and then failed a lexical gate. Retrieval quality and answerability
+are separate questions, and the gate had been reading the ranking as if it
+answered both. Once separated, the reranker's score could be used for what it is
+actually good at — which is how it ended up being the refusal gate.
 
 ---
 
 ## Evaluation
 
-68 questions in [`eval/questions.yaml`](eval/questions.yaml): 44 answerable, 12
+82 questions in [`eval/questions.yaml`](eval/questions.yaml): 44 answerable, 26
 that must be refused, 7 that must ask for a state, 5 that must decline to
 recommend.
+
+The refusal half is deliberately adversarial. Fourteen of the twenty-six are
+rephrasings that defeated an earlier version of the gate, or questions inside a
+covered topic that the corpus does not actually answer. A refusal set of obvious
+nonsense measures nothing.
 
 Every answerable question is a **paraphrase**, never the source's own wording.
 The corpus is built from FAQ pages, so the lazy version — copy each source
@@ -428,24 +474,22 @@ resolve at load time. Ambiguous or missing anchors are a hard error.
 
 ### Results
 
-Model-free retrieval baseline, `$0.0000` per answer:
+Two systems are measured and both baselines are committed, because the project
+ships two refusal gates. `$0.0000` per answer either way — neither calls an API.
 
-| retrieval (n=44) | |
-|---|---|
-| recall@1 | 0.636 |
-| recall@5 | 0.864 |
-| MRR | 0.734 |
+| | lexical gate | **cross-encoder gate** (default when installed) |
+|---|---|---|
+| recall@1 (n=44) | 0.636 | **0.727** |
+| recall@5 | 0.864 | **0.932** |
+| MRR | 0.734 | **0.805** |
+| routing overall (n=82) | 0.732 | **0.878** |
+| grounded | 0.864 | **0.977** |
+| clarify | 1.000 | 1.000 |
+| informational_only | 1.000 | 1.000 |
+| refused | 0.385 | **0.654** |
+| over-refusal | 0.136 | **0.023** |
 
-| routing (n=68) | |
-|---|---|
-| overall | 0.853 |
-| grounded | 0.864 |
-| clarify | 1.000 |
-| informational_only | 1.000 |
-| refused | 0.667 |
-| over-refusal | 0.136 |
-
-| citation faithfulness (78 citations) | |
+| citation faithfulness | |
 |---|---|
 | faithful | 1.000 |
 | **fabricated** | **0.000** |
@@ -460,19 +504,21 @@ written too late.
 
 ### Reading these numbers honestly
 
-- **68 questions is small.** Recall@5 of 0.864 means six misses. Treat the third
-  decimal as noise.
-- **Refusal accuracy is 0.667, the weakest number here**, and it is reported
-  next to over-refusal on purpose: refusing everything would score 1.000 on one
-  and destroy the other. The four questions wrongly answered are incorporation
-  ones where a GST or PF span shares enough vocabulary to clear the gate.
+- **82 questions is small.** Recall@5 of 0.932 means three misses. Treat the
+  third decimal as noise.
+- **Refusal accuracy is 0.654, still the weakest number here**, and it is
+  reported next to over-refusal on purpose: refusing everything would score
+  1.000 on one and destroy the other. The nine questions wrongly answered are
+  almost all in-scope-but-uncovered — board size, paid-up capital, name
+  reservation — where the retrieved span is genuinely relevant and simply does
+  not contain the answer.
 - **Routing accuracy is not answer correctness.** It measures whether the system
   chose the right *kind* of response and retrieved the right span — not whether
   a reader would be well served by the quote.
 - **The corpus is 94% tier-3 guidance.** These numbers describe finding the
   right FAQ entry, which is a lower bar than reading the Act.
 
-### The refusal threshold was swept, not chosen
+### Both thresholds were swept, not chosen
 
 `python -m eval.runner --sweep`. Overall accuracy peaks at 0.846 across a plateau
 from 0.22 to 0.28, and the choice within it is a judgement about which error is
@@ -487,7 +533,7 @@ worse:
 refuse, and those are the dangerous ones. A wrong refusal costs a rephrase; a
 wrong answer about a filing deadline costs a penalty.
 
-### Two measurements that overturned the obvious approach
+### Three measurements that overturned the obvious approach
 
 **The normalised score cannot refuse anything.** Min-max normalising hybrid
 scores makes the top hit ~1.0 regardless of quality — "how do I train a neural
@@ -495,6 +541,12 @@ network" retrieved a span scoring 0.96. Raw BM25 was the next candidate and also
 fails: 8.5 for an off-topic capital-gains question against 6.9 for an in-scope
 incorporation one. The gate is IDF-weighted query coverage instead, and the two
 rejected signals are kept on every hit for diagnostics.
+
+**No lexical signal can gate refusals well.** Documented in full above: the best
+of raw BM25, discriminative-term matching and a three-parameter grid search
+reached 0.714 overall against an incumbent 0.686, and only by trading answering
+ability for refusals. The failure is not a badly-chosen threshold, it is the
+signal — vocabulary overlap is not topical relevance.
 
 **Word-repetition does not identify navigation chrome.** The intuition — menus
 repeat their labels, prose does not — is backwards for legal text. The EPF Act's
@@ -519,6 +571,7 @@ request rather than only the ones where someone remembers.
 |---|---|
 | retrieval recall@1, recall@5, MRR | 0.02 absolute |
 | routing accuracy | 0.02 absolute |
+| refusal accuracy | 0.02 absolute |
 | citation faithfulness | 0.02 absolute |
 | fabricated citations | **zero** |
 | unofficial citations | **zero** |
@@ -546,10 +599,14 @@ by tests.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,ingest]"
+pip install -e ".[dev,ingest,rerank]"
 python -m ingest.build_corpus
 pytest -q
 ```
+
+`.[rerank]` is worth the 2 GB. Without it the refusal gate falls back to a
+lexical signal that is much worse at knowing what it does not know — 0.385
+against 0.654 — and the CLI will tell you it is running in that mode.
 
 ```bash
 founder-desk ask "do traders under 20 lakh turnover need GST registration"
@@ -581,7 +638,8 @@ serving/     CLI and FastAPI service
 | Freshness ledger + weekly CI job | ✅ built; no upstream change observed yet |
 | Hybrid retrieval | ✅ measured |
 | Cross-encoder reranking | ✅ measured (opt-in) |
-| Router, refusal, clarify, judgement guard | ✅ measured |
+| Router, clarify, judgement guard | ✅ measured |
+| Refusal gate (lexical + cross-encoder) | ✅ measured, both baselines gated |
 | Evaluation + CI gate | ✅ measured |
 | ESIC via pinned intermediate certificate | ✅ measured |
 | Headless rendering (optional extra) | ✅ measured |
@@ -591,7 +649,7 @@ serving/     CLI and FastAPI service
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-127 tests · `ruff` · `mypy --strict`
+145 tests · `ruff` · `mypy --strict`
 
 ## Licence
 

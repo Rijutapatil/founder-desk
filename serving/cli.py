@@ -86,7 +86,7 @@ def main() -> int:
     ask.add_argument("question")
     ask.add_argument("--state", help="ISO 3166-2:IN code, e.g. MH, KA, DL")
     ask.add_argument("--entity", choices=[e.value for e in EntityType])
-    ask.add_argument("--reranker", default="identity")
+    ask.add_argument("--reranker", default="auto", choices=("auto", "identity", "cross-encoder"))
 
     sub.add_parser("sources", help="list the allowlisted sources")
 
@@ -107,6 +107,17 @@ def main() -> int:
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+
+    if not answerer.reranker.name.startswith("cross-encoder"):
+        # Not a nag: without the cross-encoder the refusal gate falls back to a
+        # lexical signal that is measurably worse at knowing what it does not
+        # know (0.385 against 0.692), and in a compliance tool that is the
+        # difference that matters most.
+        print(
+            "  note: running with the lexical refusal gate. The cross-encoder gate refuses "
+            'far more reliably - install it with: pip install -e ".[rerank]"',
+            file=sys.stderr,
+        )
 
     answer = answerer.answer(
         args.question,

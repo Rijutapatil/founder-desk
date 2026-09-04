@@ -1,0 +1,21 @@
+{
+  "system": "nearest-faq+cross-encoder",
+  "n": 82,
+  "cost_per_answer": 0.0,
+  "retrieval": {
+    "recall@1": 0.7272727272727273,
+    "recall@5": 0.9318181818181818,
+    "mrr": 0.8045454545454546
+  },
+  "routing": {
+    "overall": 0.8780487804878049,
+    "over_refusal": 0.022727272727272728,
+    "refused": 0.6538461538461539
+  },
+  "grounding": {
+    "faithful": 1.0,
+    "fabricated": 0.0,
+    "unofficial": 0.0,
+    "n_citations": 82
+  }
+}
