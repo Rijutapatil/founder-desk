@@ -35,11 +35,17 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 # Stamped onto every answer by a validator, so it cannot be dropped by a caller
 # or edited away by a model. This tool reports what published sources say; it
 # does not advise.
+# Reworded when tier 4 was introduced: the old text asserted that every quote
+# came from an official government publication, which stopped being true the
+# moment an external source could be cited. A disclaimer that overstates is
+# worse than none, so it now points at the citations - which carry the publisher
+# and tier - instead of making a claim about all of them.
 DISCLAIMER = (
-    "INFORMATION GROUNDED IN PRIMARY SOURCES - NOT PROFESSIONAL ADVICE. "
-    "Quotes are reproduced from official government publications and may have "
-    "been amended since they were fetched. Nothing here replaces a qualified "
-    "chartered accountant, company secretary or lawyer."
+    "INFORMATION GROUNDED IN PUBLISHED SOURCES - NOT PROFESSIONAL ADVICE. "
+    "Every quote is reproduced from the source cited beside it, which names its "
+    "publisher and its authority, and may have been amended since it was "
+    "fetched. Nothing here replaces a qualified chartered accountant, company "
+    "secretary or lawyer."
 )
 
 

@@ -21,6 +21,7 @@ _TIER_LABEL = {
     AuthorityTier.STATUTE: "statute",
     AuthorityTier.INSTRUMENT: "notification/direction",
     AuthorityTier.GUIDANCE: "official guidance",
+    AuthorityTier.EXTERNAL: "NOT A GOVERNMENT SOURCE",
 }
 
 
@@ -64,6 +65,19 @@ def render(answer: Answer) -> str:
                 f"      {span.url}"
             )
         out.append("")
+
+    if answer.external_sources:
+        publishers = sorted({s.publisher for s in answer.external_sources})
+        out += [
+            _wrap(
+                "Part of this answer is quoted from a source that is not a government "
+                "publication: " + "; ".join(publishers) + ". It is included because the "
+                "government publishes nothing on this subject that can be collected. "
+                "Treat it as one step further from the law than the rest.",
+                indent="  ! ",
+            ),
+            "",
+        ]
 
     if answer.has_stale_citation:
         out += [

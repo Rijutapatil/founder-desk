@@ -1,7 +1,12 @@
 // founder-desk chat. One plate per answer; the plate's markings carry the
 // authority tier and the freshness state, per DESIGN.md.
 
-const TIER = { 1: "Act or Rules", 2: "Notification", 3: "Official guidance" };
+const TIER = {
+  1: "Act or Rules",
+  2: "Notification",
+  3: "Official guidance",
+  4: "Not a government source",
+};
 
 const OPENERS = [
   "Do I need GST registration before my first sale?",
@@ -148,6 +153,20 @@ function renderPlate(plate, reply) {
     body.append(list);
   }
   face.append(body);
+
+  if ((answer.cited_spans || []).some((s) => s.authority_tier === 4)) {
+    const publishers = [
+      ...new Set(cited.filter((s) => s.authority_tier === 4).map((s) => s.publisher)),
+    ];
+    const warn = el(
+      "p",
+      "plate__external",
+      `Part of this is quoted from ${publishers.join("; ")}, which is not a government ` +
+        `publication. It is here because the government publishes nothing collectable on ` +
+        `this subject — treat it as one step further from the law.`,
+    );
+    body.append(warn);
+  }
 
   const cites = el("ul", "plate__cites");
   for (const span of cited) cites.append(citation(span));

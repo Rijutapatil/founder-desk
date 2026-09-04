@@ -224,6 +224,13 @@ html { scroll-padding-bottom: 14rem; }
 .plate__band[data-tier="1"] { background: var(--tier-statute); }
 .plate__band[data-tier="2"] { background: var(--tier-instrument); color: #1b1206; }
 .plate__band[data-tier="3"] { background: var(--tier-guidance); }
+/* Tier 4 is not an authority tier, so it gets no authority colour - the legend
+   in DESIGN.md is closed. It reads as the absence of one: the rim ground, a
+   dashed underline, and the label saying so in words. */
+.plate__band[data-tier="4"] {
+  background: var(--enamel-rim);
+  border-bottom: 2px dashed var(--porcelain-shade);
+}
 .plate__tier { font-weight: 700; }
 .plate__publisher { opacity: 0.85; letter-spacing: 0.05em; text-transform: none; }
 
@@ -250,6 +257,15 @@ html { scroll-padding-bottom: 14rem; }
 .plate__body .factor::before {
   content: ""; position: absolute; left: 0; top: 0.62em;
   width: 6px; height: 6px; background: var(--ink-soft);
+}
+
+.plate__external {
+  margin-top: 1rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px dashed var(--tier-statute);
+  border-radius: 6px;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
 }
 
 /* Refusal: a struck plate. The unlit state is designed. */
@@ -362,6 +378,7 @@ html { scroll-padding-bottom: 14rem; }
 .key--instrument { background: var(--tier-instrument); }
 .key--guidance { background: var(--tier-guidance); }
 .key--edge { border: 2px dashed var(--cream-soft); border-radius: 2px; }
+.key--external { background: var(--enamel-rim); border-bottom: 2px dashed var(--porcelain-shade); }
 
 .disclaimer {
   max-width: 74ch; margin: 0.9rem auto 0;
