@@ -739,6 +739,43 @@ stops the EPF Act's contents page scoring 26 "sentences".
 
 ---
 
+## What is remembered, and where
+
+Seven kinds of state, with deliberately different lifetimes. The short version:
+**nothing about the person asking is ever written to disk.**
+
+| Stage | What is held | Where | Lifetime | Committed? |
+|---|---|---|---|---|
+| Fetch | Raw extracted text per source, plus status and fetch time | `data/raw/<id>.txt` + `.json` | Until `--refresh` | No — regenerable |
+| Build | Parsed spans: text, citation, tier, dates, state scope, content hash | `data/corpus/spans.jsonl` | Until rebuilt | **Yes** — CI needs it |
+| Embed | The corpus vector matrix | `data/corpus/vectors/<fingerprint>.npy` | Until model or corpus changes | No |
+| Serve | BM25 postings + vector matrix + allowlist | Process memory | Process | — |
+| Converse | The asker's state, entity type, and one held question | Process memory, per session id | Process | **Never** |
+| Watch | Per-source content hash and verdict | `sources/freshness.json` | Until next watch run | Yes |
+| Gate | What "good" looked like last time | `eval/baseline_metrics*.json` | Until deliberately updated | **Yes** |
+
+Four of these are worth explaining.
+
+**The vector cache is keyed on the model *and* a fingerprint of the span ids.**
+Swap the embedder or rebuild the corpus and the key changes, so stale vectors
+for text that no longer exists can never be served. It is gitignored because it
+is derived and large; the corpus it comes from is committed instead.
+
+**The corpus is committed and the raw text is not.** That is what lets the CI
+gate run with no network and no credentials — the thing being measured travels
+with the repository, while the 400 KB of fetched pages it came from does not.
+
+**Session memory is per-process and never persisted.** A conversation holds only
+what the founder said about their own company — a state code, an entity type —
+and it dies with the server. This is meant to run locally, so writing that to
+disk would create a small store of someone's business details in exchange for
+nothing they asked for.
+
+**The baselines are the project's memory of its own quality.** They are the only
+state here that exists to be compared against rather than read: without a
+committed record of what the numbers were, "did this change make it worse" is
+only answerable on the laptop of whoever asks.
+
 ## The CI gate
 
 `python -m eval.gate_cli` compares a fresh run to a committed baseline and exits
