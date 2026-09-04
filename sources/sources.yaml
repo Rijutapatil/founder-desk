@@ -220,6 +220,34 @@ sources:
     fetch_status: blocked
     notes: "Returns HTTP 403 to non-browser clients (checked 2026-09-04)."
 
+  # ----------------------------- NSWS APPROVAL PAGES: MEASURED AND EXCLUDED
+  #
+  # The nine entries below were collected, indexed, and then removed on the
+  # evidence. They are the full Ministry of Corporate Affairs and Ministry of
+  # Labour approval catalogues on NSWS (found with `python -m
+  # ingest.discover_nsws`), and adding them made the system materially worse:
+  #
+  #                        overall   refused   recall@1
+  #     without            0.878     0.654     0.727
+  #     with all nine      0.793     0.423     0.705
+  #
+  # The cause is what these pages are. Each is a one-paragraph description of
+  # what an approval *is* - not when it is due, what it costs, or how many
+  # directors it needs. That makes them topically close to a wide class of
+  # company questions the corpus still cannot answer, so the relevance gate lets
+  # them through and a refusal becomes a confidently-cited wrong answer:
+  # "what is the minimum paid up capital for a private limited company" came
+  # back with the text of the INC-20A declaration.
+  #
+  # Excluding only the five marginal ones changed nothing (0.793 / 0.423), so
+  # the harm is not in the edge cases - it is in the shallow-but-on-topic shape
+  # they all share. Shallow coverage of a domain is worse than none, because it
+  # converts honest refusals into plausible errors.
+  #
+  # They stay listed so this is a recorded result rather than a deleted branch.
+  # Re-including them needs either deeper sources for the same topics, or a gate
+  # that can tell "about this subject" from "answers this question".
+
   # ------------------------------------------- INCORPORATION (rendered)
   # NSWS builds its pages in the browser: a plain GET returns 29 characters of
   # shell. These need the optional [browser] extra. They are the only route
@@ -264,6 +292,119 @@ sources:
     publisher: National Single Window System (DPIIT) - Ministry of Labour and Employment
     title: Registration under the Contract Labour (Regulation and Abolition) Act, 1970
     url: https://www.nsws.gov.in/portal/approval-details/ministry-of-labour-and-employment/ministry-of-labour-and-employment/registration-under-the-contract-labour-regulation-and-abolition-act-1970
+    authority_tier: 3
+    domains: [labour]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+
+  - id: nsws-mca-commencement
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Corporate Affairs
+    title: Declaration of commencement of business by a company (INC-20A)
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-corporate-affairs/ministry-of-corporate-affairs/declaration-of-commencement-of-business-by-a-company
+    authority_tier: 3
+    domains: [incorporation]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+    notes: >-
+      The INC-20A filing. Previously one of the documented refusals.
+  - id: nsws-mca-din
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Corporate Affairs
+    title: Director Identification Number (DIN)
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-corporate-affairs/ministry-of-corporate-affairs/director-identification-number-din
+    authority_tier: 3
+    domains: [incorporation]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+  - id: nsws-mca-llp
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Corporate Affairs
+    title: Registration for incorporation of a Limited Liability Partnership
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-corporate-affairs/ministry-of-corporate-affairs/registration-for-incorporation-of-a-limited-liability-partnership
+    authority_tier: 3
+    domains: [incorporation]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+  - id: nsws-mca-foreign-llp-name
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Corporate Affairs
+    title: Reservation of name of a foreign Limited Liability Partnership
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-corporate-affairs/ministry-of-corporate-affairs/registration-for-reservation-of-name-of-a-foreign-limited-liability-partnership
+    authority_tier: 3
+    domains: [incorporation]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+  - id: nsws-mca-foreign-llp-place
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Corporate Affairs
+    title: Registration of place of business in India by a foreign LLP
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-corporate-affairs/ministry-of-corporate-affairs/registration-of-place-of-business-in-india-by-a-foreign-limited-liability-partnership
+    authority_tier: 3
+    domains: [incorporation]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+  - id: nsws-labour-esic-epfo
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Labour and Employment
+    title: Common registration under the ESIC and EPFO Acts
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-labour-and-employment/ministry-of-labour-and-employment/common-registration-under-esic-and-epfo-acts
+    authority_tier: 3
+    domains: [labour]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+    notes: >-
+      The single registration a new employer actually files for PF and ESI.
+  - id: nsws-labour-bocw
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Labour and Employment
+    title: Registration under the Building and Other Construction Workers Act, 1996
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-labour-and-employment/ministry-of-labour-and-employment/registration-under-the-building-and-other-construction-workers-act-1996
+    authority_tier: 3
+    domains: [labour]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+  - id: nsws-labour-migrant
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Labour and Employment
+    title: Registration under the Inter-State Migrant Workmen Act, 1979
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-labour-and-employment/ministry-of-labour-and-employment/registration-under-the-inter-state-migrant-workmen-act-1979
+    authority_tier: 3
+    domains: [labour]
+    license: "NSWS portal content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    render: true
+    content_selector: .marketplace-content
+  - id: nsws-labour-clc-returns
+    fetch_status: excluded
+    publisher: National Single Window System (DPIIT) - Ministry of Labour and Employment
+    title: CLC returns
+    url: https://www.nsws.gov.in/portal/approval-details/ministry-of-labour-and-employment/ministry-of-labour-and-employment/clc-returns
     authority_tier: 3
     domains: [labour]
     license: "NSWS portal content - Government of India; terms not yet read in full"

@@ -18,7 +18,7 @@ import structlog
 from agent.schema import Domain, SourceSpan
 from ingest.fetch import fetch_all
 from ingest.parse import build_all
-from sources.loader import Allowlist, load_allowlist
+from sources.loader import Allowlist, FetchStatus, load_allowlist
 
 log = structlog.get_logger(__name__)
 
@@ -64,9 +64,17 @@ def coverage(spans: list[SourceSpan], allowlist: Allowlist) -> str:
         note = f"  ({len(blocked)} source(s) blocked)" if blocked else ""
         lines.append(f"  {domain.value:<18} {per_domain.get(domain.value, 0):>5} spans{note}")
 
-    if allowlist.blocked():
+    uncollectable = [e for e in allowlist.entries if e.fetch_status is FetchStatus.BLOCKED]
+    if uncollectable:
         lines += ["", "in scope but not collectable", "-" * 58]
-        lines += [f"  {e.id:<32} {e.publisher[:40]}" for e in allowlist.blocked()]
+        lines += [f"  {e.id:<32} {e.publisher[:40]}" for e in uncollectable]
+
+    # Reported separately from the blocked ones. "We could not fetch this" and
+    # "we fetched it, measured it, and it made the answers worse" are different
+    # facts, and the second is the more useful one to a reader.
+    if allowlist.excluded():
+        lines += ["", "collectable, measured, and excluded", "-" * 58]
+        lines += [f"  {e.id:<32} {e.publisher[:40]}" for e in allowlist.excluded()]
     return "\n".join(lines)
 
 

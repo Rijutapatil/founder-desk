@@ -68,6 +68,14 @@ class FetchStatus(StrEnum):
 
     OK = "ok"
     BLOCKED = "blocked"
+    """Cannot be collected: a 403, a broken TLS chain, or a page with no content."""
+    EXCLUDED = "excluded"
+    """Collectable, in scope, and measured to make the system *worse*.
+
+    Distinct from BLOCKED on purpose. "We could not fetch this" and "we fetched
+    this, measured it, and it degraded the answers" are different facts about a
+    source, and collapsing them would hide the more interesting one.
+    """
     UNTESTED = "untested"
 
 
@@ -227,8 +235,16 @@ class Allowlist:
         return [e for e in self._entries if e.fetch_status is FetchStatus.OK]
 
     def blocked(self) -> list[SourceEntry]:
-        """Entries that are in scope but cannot be collected. Reported, never hidden."""
-        return [e for e in self._entries if e.fetch_status is FetchStatus.BLOCKED]
+        """Entries that are in scope but not in the corpus. Reported, never hidden."""
+        return [
+            e
+            for e in self._entries
+            if e.fetch_status in (FetchStatus.BLOCKED, FetchStatus.EXCLUDED)
+        ]
+
+    def excluded(self) -> list[SourceEntry]:
+        """Collectable sources deliberately left out on measured evidence."""
+        return [e for e in self._entries if e.fetch_status is FetchStatus.EXCLUDED]
 
 
 def load_allowlist(path: Path = DEFAULT_ALLOWLIST) -> Allowlist:

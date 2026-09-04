@@ -255,7 +255,7 @@ implying diligence that has not happened.
 | startup_india | 35 | DPIIT recognition, self-certification |
 | tax_registration | 3 | Income Tax portal only |
 | banking_fema | 1 | RBI master directions index only |
-| incorporation | 1 | NSWS / Ministry of Corporate Affairs — **thin, see below** |
+| incorporation | 1 | NSWS / Ministry of Corporate Affairs — **thin; nine further pages measured and excluded, see below** |
 
 ### What could not be collected, and why
 
@@ -266,7 +266,7 @@ This is the part most likely to be quietly omitted, so it is stated first.
 | MCA portal | HTTP 403 to any non-browser client |
 | India Code (Companies Act 2013) | HTTP 403 to any non-browser client |
 | Ministry of Labour | HTTP 403 to any non-browser client |
-| NSWS full listing | renders, but the catalogue is a paginated React UI — see below |
+| NSWS full listing | renders, but the catalogue is a paginated React UI — enumerable with `ingest/discover_nsws.py` |
 | NSWS startup registration | renders, and is **empty upstream**: no "About this approval" text |
 
 A browser User-Agent is not spoofed for the three that return 403. These are
@@ -542,6 +542,28 @@ fails: 8.5 for an off-topic capital-gains question against 6.9 for an in-scope
 incorporation one. The gate is IDF-weighted query coverage instead, and the two
 rejected signals are kept on every hit for diagnostics.
 
+**Shallow coverage of a domain is worse than none.** Incorporation had one span,
+so the obvious next move was more incorporation sources. Driving the NSWS filter
+UI produced the full Ministry of Corporate Affairs and Ministry of Labour
+approval catalogues — including the INC-20A declaration and DIN, both named in
+this README as refusals. Adding all nine made the system measurably worse:
+
+| | overall | refused | recall@1 |
+|---|---|---|---|
+| without them | **0.878** | **0.654** | **0.727** |
+| with all nine | 0.793 | 0.423 | 0.705 |
+
+Each page is a one-paragraph description of what an approval *is* — not when it
+is due, what it costs, or how many directors it needs. That makes them topically
+close to a wide class of company questions the corpus still cannot answer, so the
+relevance gate admits them and an honest refusal becomes a plausible error:
+*"what is the minimum paid up capital for a private limited company"* came back
+with the text of the INC-20A declaration. Excluding only the five marginal pages
+changed nothing (0.793 / 0.423), so the harm is the shape they all share, not the
+edge cases. They stay in `sources.yaml` with `fetch_status: excluded` and the
+numbers attached — a recorded result rather than a deleted branch, and distinct
+from the sources that simply cannot be fetched.
+
 **No lexical signal can gate refusals well.** Documented in full above: the best
 of raw BM25, discriminative-term matching and a three-parameter grid search
 reached 0.714 overall against an incumbent 0.686, and only by trading answering
@@ -675,7 +697,7 @@ truth in [PRODUCT.md](PRODUCT.md).
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-164 tests · `ruff` · `mypy --strict`
+168 tests · `ruff` · `mypy --strict`
 
 ## Licence
 

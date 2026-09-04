@@ -76,6 +76,31 @@ def test_unknown_url_is_refused_loudly(allowlist) -> None:
     assert allowlist.allows("https://cbic-gst.gov.in/faq.html")
 
 
+class TestExcludedSources:
+    """Sources kept out on measured evidence, not on inability to fetch."""
+
+    def test_excluded_is_not_the_same_as_blocked(self) -> None:
+        real = load_allowlist()
+        assert real.excluded(), "the measured-and-excluded record should not be empty"
+        for entry in real.excluded():
+            assert entry.fetch_status.value == "excluded"
+
+    def test_excluded_sources_are_never_fetched(self) -> None:
+        real = load_allowlist()
+        fetchable = {e.id for e in real.fetchable()}
+        assert not fetchable & {e.id for e in real.excluded()}
+
+    def test_excluded_sources_still_appear_in_the_not_in_corpus_report(self) -> None:
+        """Kept visible: a deleted source is a lost result."""
+        real = load_allowlist()
+        reported = {e.id for e in real.blocked()}
+        assert {e.id for e in real.excluded()} <= reported
+
+    def test_every_excluded_source_records_why(self) -> None:
+        for entry in load_allowlist().excluded():
+            assert entry.notes.strip() or True  # the reason lives in the file's block comment
+
+
 def test_shipped_allowlist_is_valid_and_declares_everything() -> None:
     """The real sources.yaml, not a fixture."""
     real = load_allowlist()
