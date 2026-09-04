@@ -119,6 +119,7 @@ sources:
 
   # ------------------------------------------------------ STARTUP INDIA
   - id: startupindia-recognition
+    fetch_status: excluded
     publisher: DPIIT / Startup India
     title: Startup recognition - eligibility and process
     url: https://www.startupindia.gov.in/content/sih/en/startupgov/startup_recognition_page.html
@@ -263,6 +264,69 @@ sources:
     license: "Government of NCT of Delhi website content; terms not yet read in full"
     license_verified: false
     refresh_days: 90
+
+  # ------------------------------------- COMPANY SETUP: entity, PAN, banking
+  - id: incometax-business-profession
+    publisher: Income Tax Department
+    title: Tax guidance for individuals with business or professional income
+    url: https://www.incometax.gov.in/iec/foportal/help/individual-business-profession
+    authority_tier: 3
+    domains: [tax_registration]
+    license: "Income Tax Department website content - Government of India; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    notes: "The department's own guidance for sole proprietors and professionals."
+
+  - id: rbi-kyc-commercial-banks
+    publisher: Reserve Bank of India
+    title: Reserve Bank of India (Commercial Banks - Know Your Customer) Directions
+    url: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=13141
+    authority_tier: 2
+    domains: [banking_fema]
+    license: "RBI website content - reproduction permitted with acknowledgement; terms not yet read in full"
+    license_verified: false
+    refresh_days: 60
+    notes: >-
+      What a bank must obtain before opening an account, set out separately for
+      proprietorship firms, partnerships and companies. This is the honest
+      source for "what do I need to open a current account" - the rule the bank
+      is following, rather than any one bank's checklist.
+
+  # --------------------------------------------------- STATE LAW: Telangana
+  - id: telangana-labour-faq
+    publisher: Labour Department, Government of Telangana
+    title: Labour Department FAQs - Shops and Establishments and allied Acts
+    url: https://labour.telangana.gov.in/Faqs.do
+    authority_tier: 3
+    domains: [labour]
+    states: [TG]
+    license: "Government of Telangana website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+    notes: "~46k characters of departmental Q&A in English. The densest state source found."
+
+  - id: telangana-acts-services
+    publisher: Labour Department, Government of Telangana
+    title: Acts administered and services provided by the Labour Department
+    url: https://labour.telangana.gov.in/ActServices.do
+    authority_tier: 3
+    domains: [labour]
+    states: [TG]
+    license: "Government of Telangana website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+
+  # ----------------------------------------------------- STATE LAW: Haryana
+  - id: haryana-shops-act
+    publisher: Labour Department, Government of Haryana
+    title: Punjab Shops and Commercial Establishments Act, 1958 (as applicable in Haryana)
+    url: https://hrylabour.gov.in/shops/front/shop_terms
+    authority_tier: 1
+    domains: [labour]
+    states: [HR]
+    license: "Government of Haryana website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 365
 
   # ------------------------- STATE LAW: KARNATAKA & MAHARASHTRA (not readable)
   #
@@ -423,7 +487,6 @@ sources:
     notes: >-
       The INC-20A filing. Previously one of the documented refusals.
   - id: nsws-mca-din
-    fetch_status: excluded
     publisher: National Single Window System (DPIIT) - Ministry of Corporate Affairs
     title: Director Identification Number (DIN)
     url: https://www.nsws.gov.in/portal/approval-details/ministry-of-corporate-affairs/ministry-of-corporate-affairs/director-identification-number-din

@@ -247,16 +247,16 @@ implying diligence that has not happened.
 
 ## The corpus
 
-529 spans, 257,240 characters, from 19 of 33 allowlisted sources.
+689 spans, 393,865 characters, from 24 of 41 allowlisted sources.
 
 | domain | spans | note |
 |---|---|---|
 | gst | 320 | CBIC FAQs + GST portal help |
-| labour | 171 | EPF & MP Act 1952, EPFO FAQs, ESI Acts, contract labour, **Delhi Shops & Establishments** |
-| startup_india | 35 | DPIIT recognition, self-certification |
-| tax_registration | 3 | Income Tax portal only |
-| banking_fema | 1 | RBI master directions index only |
-| incorporation | 1 | NSWS / Ministry of Corporate Affairs — **thin; nine further pages measured and excluded, see below** |
+| labour | 276 | EPF & MP Act 1952, EPFO FAQs, ESI Acts, contract labour, **Delhi · Haryana · Telangana** |
+| banking_fema | 44 | RBI Commercial Banks KYC Directions — what a bank must obtain to open an account |
+| startup_india | 32 | DPIIT recognition, self-certification |
+| tax_registration | 17 | Income Tax guidance for business and professional income |
+| incorporation | 2 | NSWS / Ministry of Corporate Affairs — entity types and DIN. **Still thin** |
 
 ### What could not be collected, and why
 
@@ -276,7 +276,13 @@ A browser User-Agent is not spoofed for the three that return 403. These are
 public services that have said no in the way a service says no, and a test pins
 that they are never routed through the renderer either.
 
-**Delhi is the only state covered, and not for want of trying.** Karnataka and
+**Three states covered: Delhi, Haryana and Telangana.** Telangana's labour
+department publishes ~46k characters of English Q&A and Haryana the Punjab Shops
+Act as applied there, so both reach the standard Delhi set. The clarifying
+question now names the states it can actually use, rather than asking for a fact
+it may not be able to act on.
+
+**Karnataka and Maharashtra remain out, and not for want of trying.** Karnataka and
 Maharashtra were searched properly and neither can be collected to the standard
 Delhi met — for mechanical reasons, each naming a different missing capability:
 Karnataka publishes its Shops Act only as scanned images (OCR), Maharashtra
@@ -498,7 +504,7 @@ actually good at — which is how it ended up being the refusal gate.
 
 ## Evaluation
 
-87 questions in [`eval/questions.yaml`](eval/questions.yaml): 47 answerable, 28
+92 questions in [`eval/questions.yaml`](eval/questions.yaml): 53 answerable, 27
 that must be refused, 7 that must ask for a state, 5 that must decline to
 recommend.
 
@@ -523,15 +529,15 @@ ships two refusal gates. `$0.0000` per answer either way — neither calls an AP
 
 | | lexical gate | **cross-encoder gate** (default when installed) |
 |---|---|---|
-| recall@1 (n=47) | 0.596 | **0.681** |
-| recall@5 | 0.830 | **0.936** |
-| MRR | 0.698 | **0.780** |
-| routing overall (n=87) | 0.713 | **0.885** |
-| grounded | 0.851 | **0.979** |
+| recall@1 (n=53) | 0.528 | **0.698** |
+| recall@5 | 0.774 | **0.906** |
+| MRR | 0.643 | **0.783** |
+| routing overall (n=92) | 0.717 | **0.859** |
+| grounded | 0.774 | **0.962** |
 | clarify | 1.000 | 1.000 |
 | informational_only | 1.000 | 1.000 |
-| refused | 0.357 | **0.679** |
-| over-refusal | 0.149 | **0.021** |
+| refused | 0.333 | **0.593** |
+| over-refusal | 0.151 | **0.038** |
 
 | citation faithfulness | |
 |---|---|
@@ -756,7 +762,8 @@ truth in [PRODUCT.md](PRODUCT.md).
 | Hybrid retrieval | ✅ measured |
 | Cross-encoder reranking + embedding model | ✅ measured (opt-in extra) |
 | Router, clarify, judgement guard | ✅ measured |
-| State law: Delhi scoped, others refused | ✅ measured (Delhi only) |
+| Company setup: entity types, DIN, bank-account KYC | ⚠️ partial — entity types and DIN only |
+| State law: scoped answers, others refused | ✅ measured (DL · HR · TG) |
 | Refusal gate (lexical + cross-encoder) | ✅ measured, both baselines gated |
 | Chat: terminal REPL + local web UI | ✅ built and exercised in a browser |
 | Evaluation + CI gate | ✅ measured |

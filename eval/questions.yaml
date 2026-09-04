@@ -146,6 +146,9 @@ grounded:
   - q: "How do patent facilitators claim their fees for work done for startups?"
     source: startupindia-faq
     anchor: "reimbursement by patent facilitators"
+  - q: "what is a DIN and how do I get one for a director"
+    source: nsws-mca-din
+    anchor: "Director Identification Number"
 
   # ---- Incorporation and contract labour (collected via headless rendering)
   - q: "Which kinds of company can I set up in India?"
@@ -157,6 +160,25 @@ grounded:
   - q: "What happens if a principal employer never registers for contract labour?"
     source: nsws-contract-labour
     anchor: "Section 36 of the Act"
+
+  # ---- Company setup: banking and tax registration
+  - q: "What does the bank need from me to open a current account for my company?"
+    source: rbi-kyc-commercial-banks
+    anchor: "For opening an account of a company"
+  - q: "Does a sole proprietorship get checked differently from a company?"
+    source: rbi-kyc-commercial-banks
+    anchor: "CDD Measures for Sole Proprietary firms"
+
+  # ---- State law (Telangana, Haryana)
+  - q: "In Telangana, what happens if the principal employer never registers the establishment?"
+    source: telangana-labour-faq
+    anchor: "effect of non-registration"
+  - q: "How does a principal employer in Telangana apply for registration?"
+    source: telangana-labour-faq
+    anchor: "Form I in triplicate"
+  - q: "What do I have to upload to register a shop in Haryana?"
+    source: haryana-shops-act
+    anchor: "Front photo of shop or commercial establishment"
 
   # ---- State law (Delhi). These must be answered from a Delhi-scoped span,
   # not from a central Act that happens to share vocabulary.
@@ -198,7 +220,6 @@ refused:
   - q: "how many people must be on the board of a private company"
   - q: "what is the minimum paid up capital for a private limited company"
   - q: "how do I appoint the first auditor of a new company"
-  - q: "what is a DIN and how do I get one for a director"
   - q: "how do I reserve a company name before incorporation"
   - q: "what documents make up the MOA and AOA of a company"
   - q: "which software should a startup use to manage its customers"
