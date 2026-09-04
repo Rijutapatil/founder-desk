@@ -328,6 +328,38 @@ sources:
     license_verified: false
     refresh_days: 365
 
+  # ------------------------------------------ EXTERNAL (not a government host)
+  #
+  # Tier 4. Admitted only where government publishes nothing usable on something
+  # a founder genuinely needs, and only for bodies with a real relationship to
+  # the process. Every entry states that relationship, and every answer that
+  # rests on one says so.
+  #
+  # PAN is the case that forced this. The Income Tax Department's own PAN pages
+  # are on incometaxindia.gov.in, which returns 403 to automated clients, and
+  # the e-filing portal's help routes 404. The remaining publishers are the two
+  # agencies the department authorised to issue PAN.
+
+  - id: utiitsl-pan
+    publisher: UTI Infrastructure Technology and Services Limited (UTIITSL)
+    title: PAN card services - application, forms and current notices
+    url: https://www.pan.utiitsl.com/PAN/
+    authority_tier: 4
+    domains: [tax_registration]
+    license: "UTIITSL website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 30
+    external_justification: >-
+      A Government of India company (CIN U65991MH1993GOI072051) authorised by
+      the Income Tax Department to receive and process PAN applications. Not a
+      commentator on the process - one of the two bodies that runs it. Carries
+      current operational notices the department's own reachable pages do not,
+      such as the change of PAN application forms from 01.04.2026 and the
+      section 272B penalty for holding more than one PAN.
+    notes: >-
+      Short refresh window: this is an operational notice board, not statute,
+      and its content changes with the department's circulars.
+
   # ------------------------- STATE LAW: KARNATAKA & MAHARASHTRA (not readable)
   #
   # Both were searched for properly and neither can be collected to the standard
