@@ -85,8 +85,11 @@ strict = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]
 
+# Every optional extra needs an entry here. CI installs only [dev,ingest,serving],
+# so a package that is present on a developer machine but absent there will pass
+# mypy locally and fail the build - which is exactly how playwright slipped in.
 [[tool.mypy.overrides]]
-module = ["sentence_transformers.*", "bs4.*", "pypdf.*"]
+module = ["sentence_transformers.*", "playwright.*", "bs4.*", "pypdf.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
