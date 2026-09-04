@@ -51,6 +51,112 @@ Other extras: `.[rerank]` for the cross-encoder (**recommended** — it is the
 refusal gate), `.[browser]` plus `playwright install chromium` for the
 client-rendered sources.
 
+## Putting your own UI in front of it
+
+You do not need to read anything else in these docs to do this. Run the service,
+POST to one endpoint, render four cases.
+
+```bash
+pip install -e ".[serving,rerank]"      # rerank is optional but is the refusal gate
+python -m ingest.build_corpus           # once; the corpus is committed, this refreshes it
+FOUNDER_DESK_CORS_ORIGINS=http://localhost:3000 uvicorn serving.app:app --port 8123
+```
+
+Or, in one command, [with Docker](../Dockerfile).
+
+**CORS is the first wall you will hit.** A UI on `localhost:3000` calling
+`localhost:8123` is cross-origin, and without `FOUNDER_DESK_CORS_ORIGINS` the
+browser blocks the request and tells you almost nothing about why.
+
+### The endpoints
+
+| | | For |
+|---|---|---|
+| `POST /chat` | `{session_id, message}` → `{answer, known, resolved_from_pending}` | A chat UI. Session state is held server-side; the client only keeps an id |
+| `POST /ask` | `{question, state?, entity?}` → `Answer` | A one-shot search box, no session |
+| `GET /sources` | The allowlist with publisher, tier, licence, status | An "about the data" page |
+| `GET /ready` | 200 once the corpus is loaded | Health checks. `/health` only says the process is up |
+| `GET /docs` | OpenAPI | Generating a typed client instead of hand-writing one |
+
+### What comes back
+
+A real response, trimmed:
+
+```jsonc
+{
+  "answer": {
+    "kind": "grounded",                       // ← four possible values, see below
+    "applies_to": { "entity_type": "opc", "state": null, "turnover_band": null },
+    "claims": [
+      { "text": "Yes. One Person Companies are eligible to avail benefits…",
+        "supported_by": ["startupindia-faq:dd4b3824"] }
+    ],
+    "cited_spans": [
+      { "span_id": "startupindia-faq:dd4b3824",
+        "citation": "Startup India Frequently Asked Questions - Q: Would a One Person Company…",
+        "url": "https://www.startupindia.gov.in/content/sih/en/about_us/faqs.html",
+        "publisher": "DPIIT / Startup India",
+        "authority_tier": 3,                  // 1 statute · 2 notification · 3 guidance · 4 NOT government
+        "fetched_at": "2026-09-03T23:31:57Z",
+        "status": "current" }                 // or stale / superseded
+    ],
+    "as_of": "2026-09-04T18:25:53Z",
+    "disclaimer": "INFORMATION GROUNDED IN PUBLISHED SOURCES - NOT PROFESSIONAL ADVICE…"
+  },
+  "known": "entity: opc",                     // facts carried forward this session
+  "resolved_from_pending": false              // true when this message answered a clarify
+}
+```
+
+### The four cases your UI must handle
+
+A UI that renders only `grounded` will show blank screens three ways out of
+four, and those three are where most of the value is.
+
+| `kind` | Render | Field to read |
+|---|---|---|
+| `grounded` | The claims, each with its citation | `claims`, `cited_spans` |
+| `clarify` | The question, and let them answer it in the next message | `clarifying_question` |
+| `informational_only` | The factors, and that a CA or CS should decide | `considerations` |
+| `refused` | That it cannot answer, and what it searched | `searched` |
+
+`clarify` is the one worth building well: the next message is treated as the
+answer to it, so *"do I need shops and establishment registration"* → *"which
+state?"* → *"Telangana"* → the answer works with no extra API surface. Set
+`resolved_from_pending` aside for the heading — when it is true, the answer is to
+the **earlier** question, and showing the last message as the heading reads as a
+non-sequitur.
+
+### Three things you must not drop
+
+These are the product, not decoration:
+
+1. **The citation.** Publisher, tier, URL and fetch date beside every claim. An
+   answer without them is the thing this exists to replace.
+2. **`authority_tier: 4`** — not a government source. Say so visibly; the CLI
+   and the bundled UI both do.
+3. **`status` other than `current`** — the source is past its refresh window.
+   Flag it rather than quietly serving it.
+
+The bundled UI in [`serving/static/`](../serving/static/) does all of this in
+about 200 lines of vanilla JS, and is worth reading as a reference before
+writing your own.
+
+### Or skip HTTP entirely
+
+```python
+from agent.answerer import build_answerer
+from agent.conversation import Conversation
+
+chat = Conversation(build_answerer())      # loads the corpus once, ~10s with models
+turn = chat.ask("do I need shops and establishment registration")
+print(turn.answer.kind, turn.answer.clarifying_question)
+print(chat.ask("Telangana").answer.claims[0].text)
+```
+
+Build the answerer **once** and keep it: it holds the corpus, the index and the
+models in memory, so constructing one per request would reload all of it.
+
 ## What you can ask it
 
 The corpus covers the first year: GST, provident fund and contract labour,
