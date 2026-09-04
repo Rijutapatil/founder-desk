@@ -169,6 +169,14 @@ grounded:
     source: rbi-kyc-commercial-banks
     anchor: "CDD Measures for Sole Proprietary firms"
 
+  # ---- PAN. Answered from a tier-4 source; the answer must say so.
+  - q: "What happens if someone ends up holding two PAN cards?"
+    source: utiitsl-pan
+    anchor: "penalty of Rs. 10,000"
+  - q: "Are the old PAN application forms still accepted?"
+    source: utiitsl-pan
+    anchor: "will NOT be accepted after"
+
   # ---- State law (Telangana, Haryana)
   - q: "In Telangana, what happens if the principal employer never registers the establishment?"
     source: telangana-labour-faq

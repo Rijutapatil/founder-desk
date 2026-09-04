@@ -15,6 +15,10 @@ Different metrics get different tolerances, because they mean different things:
 * **Over-refusal** - gated upward, because the cheapest way to make every other
   number look good is to refuse more. Without this, a change that quietly turns
   the system into "I cannot answer that" passes every other check.
+* **External citation rate** - gated *upward*, like over-refusal. Tier-4 sources
+  are a deliberate, narrow exception, and the way an exception stops being one is
+  by growing quietly. A change that starts leaning on non-government material has
+  to be noticed in review rather than discovered later.
 * **Citation faithfulness** - gated downward. Fabrication is the loud failure,
   but the quiet one is a corpus rotting in place: sources drift past their
   refresh windows, every citation becomes ``stale``, and the retrieval and
@@ -38,6 +42,7 @@ DEFAULT_BASELINE = Path(__file__).resolve().parent / "baseline_metrics.json"
 
 ACCURACY_TOLERANCE = 0.02
 OVER_REFUSAL_TOLERANCE = 0.05
+EXTERNAL_TOLERANCE = 0.02
 COST_TOLERANCE_RATIO = 0.25
 ZERO_TOLERANCE = 0.0
 
@@ -91,6 +96,7 @@ def snapshot(report: Any, grounding: Any, *, system: str) -> dict[str, Any]:
             "refused": report.routing.accuracy_for(AnswerKind.REFUSED),
         },
         "grounding": {
+            "external": grounding.external_rate,
             "faithful": grounding.faithful_rate,
             "fabricated": grounding.fabricated_rate,
             "unofficial": grounding.unofficial_rate,
@@ -136,6 +142,14 @@ def compare_to_baseline(current: dict[str, Any], baseline: dict[str, Any]) -> Ga
     if cur_or > base_or + OVER_REFUSAL_TOLERANCE:
         result.failures.append(
             GateFailure("routing.over_refusal", base_or, cur_or, OVER_REFUSAL_TOLERANCE)
+        )
+
+    # So is reliance on non-government sources.
+    base_ext = baseline.get("grounding", {}).get("external", 0.0)
+    cur_ext = current.get("grounding", {}).get("external", 0.0)
+    if cur_ext > base_ext + EXTERNAL_TOLERANCE:
+        result.failures.append(
+            GateFailure("grounding.external", base_ext, cur_ext, EXTERNAL_TOLERANCE)
         )
 
     for key in ("fabricated", "unofficial"):

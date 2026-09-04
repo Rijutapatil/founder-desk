@@ -28,7 +28,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 
-from agent.schema import Answer, SourceSpan, SpanStatus
+from agent.schema import Answer, AuthorityTier, SourceSpan, SpanStatus
 from sources.loader import Allowlist, NotAllowlisted
 
 
@@ -39,6 +39,8 @@ class Verdict(StrEnum):
     SUPERSEDED = "superseded"
     OUT_OF_SCOPE = "out_of_scope"
     STALE = "stale"
+    EXTERNAL = "external"
+    """Allowlisted and current, but not a government publication."""
 
 
 @dataclass(frozen=True)
@@ -75,6 +77,17 @@ class GroundednessReport:
     @property
     def unofficial_rate(self) -> float:
         return self.rate(Verdict.UNOFFICIAL)
+
+    @property
+    def external_rate(self) -> float:
+        """Share of citations resting on a declared non-government source.
+
+        Not a failure - tier 4 is admitted deliberately - but a number that
+        should only move when someone means it to.
+        """
+        if not self.n:
+            return 0.0
+        return sum(c.verdict is Verdict.EXTERNAL for c in self.checks) / self.n
 
     def counts(self) -> dict[str, int]:
         out: dict[str, int] = {}
@@ -139,6 +152,10 @@ def check_answer(
                     f"does not cover {answer.applies_to.describe()}",
                 )
             )
+            continue
+
+        if cited.authority_tier is AuthorityTier.EXTERNAL:
+            checks.append(Check(cited.span_id, Verdict.EXTERNAL, "declared non-government source"))
             continue
 
         checks.append(Check(cited.span_id, Verdict.SUPPORTS))
