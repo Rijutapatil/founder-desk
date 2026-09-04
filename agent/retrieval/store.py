@@ -21,10 +21,12 @@ type, rather than ranking everything and hoping the inapplicable ones score low.
 
 from __future__ import annotations
 
+import hashlib
 import math
 import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import Final
 
 import numpy as np
@@ -109,6 +111,10 @@ class SpanStore:
     @property
     def spans(self) -> list[SourceSpan]:
         return list(self._spans)
+
+    @property
+    def vectors(self) -> np.ndarray | None:
+        return self._matrix
 
     def add(self, spans: Sequence[SourceSpan], vectors: np.ndarray | None = None) -> None:
         if not spans:
@@ -203,7 +209,9 @@ class SpanStore:
         lexical = _minmax(raw_lexical)
         coverage = self._coverage(query)
         if self._matrix is not None:
-            qv = _l2_normalize(self._embedder.embed([query]).reshape(1, -1))[0]
+            qv = _l2_normalize(
+                np.asarray(self._embedder.embed_query(query), dtype=np.float32).reshape(1, -1)
+            )[0]
             vector = _minmax(self._matrix @ qv)
         else:  # pragma: no cover - a store is never built without vectors
             vector, alpha = np.zeros(len(self._spans), dtype=np.float32), 0.0
@@ -244,6 +252,54 @@ def _minmax(scores: np.ndarray) -> np.ndarray:
 
 
 def build_store(spans: Sequence[SourceSpan], embedder: Embedder | None = None) -> SpanStore:
+    """Assemble a store, reusing cached vectors when the corpus has not changed.
+
+    A real embedding model takes a few seconds over this corpus - trivial once,
+    intolerable on every CLI invocation and every test-module fixture. The cache
+    is keyed on the model *and* a fingerprint of the span ids, so a rebuilt
+    corpus or a swapped embedder invalidates it automatically rather than
+    silently serving vectors for text that no longer exists.
+    """
+    embedder = embedder if embedder is not None else HashingEmbedder()
+    vectors = _load_cached_vectors(spans, embedder)
     store = SpanStore(embedder)
-    store.add(spans)
+    store.add(spans, vectors)
+    if vectors is None:
+        _save_cached_vectors(spans, embedder, store.vectors)
     return store
+
+
+VECTOR_CACHE = Path(__file__).resolve().parents[2] / "data" / "corpus" / "vectors"
+
+
+def _fingerprint(spans: Sequence[SourceSpan], embedder: Embedder) -> str:
+    digest = hashlib.blake2b(digest_size=8)
+    digest.update(embedder.name.encode())
+    for span in spans:
+        digest.update(span.span_id.encode())
+    return digest.hexdigest()
+
+
+def _cache_path(spans: Sequence[SourceSpan], embedder: Embedder) -> Path:
+    return VECTOR_CACHE / f"{_fingerprint(spans, embedder)}.npy"
+
+
+def _load_cached_vectors(spans: Sequence[SourceSpan], embedder: Embedder) -> np.ndarray | None:
+    path = _cache_path(spans, embedder)
+    if not path.exists():
+        return None
+    try:
+        cached: np.ndarray = np.load(path)
+    except (ValueError, OSError):  # pragma: no cover - a corrupt cache is not fatal
+        return None
+    return cached if cached.shape[0] == len(spans) else None
+
+
+def _save_cached_vectors(
+    spans: Sequence[SourceSpan], embedder: Embedder, vectors: np.ndarray | None
+) -> None:
+    if vectors is None:
+        return
+    path = _cache_path(spans, embedder)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(path, vectors)

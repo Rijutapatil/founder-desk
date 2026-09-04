@@ -181,11 +181,12 @@ themselves. The only outbound calls anywhere in the package are in
 | stage | what actually runs |
 |---|---|
 | lexical retrieval | **BM25** — a ranking function from 1994. Arithmetic over term frequencies. |
-| semantic retrieval | **Character n-gram feature hashing** — a hash function, not a trained model. Deterministic and offline. |
+| semantic retrieval | **`BAAI/bge-small-en-v1.5`** when the extra is installed, otherwise character n-gram hashing. Local, offline, no key. Finds spans; writes nothing. |
 | answering | **Extractive.** The answer *is* the source's sentences, returned verbatim. There is no generation step. |
-| reranking *(optional, off)* | **`BAAI/bge-reranker-base`**, a local cross-encoder. The only neural network in the project. Downloads once, runs on your CPU, and only *reorders* candidates — it never writes text. |
+| reranking *(optional)* | **`BAAI/bge-reranker-base`**, a local cross-encoder. Runs on your CPU, only *reorders* candidates, and gates refusals — it never writes text. |
 
-That is a design choice, not a limitation waiting to be fixed. Fabrication is
+The two models are both *encoders*: they score and rank text, they do not
+generate it. That is a design choice, not a limitation waiting to be fixed. Fabrication is
 impossible here by construction rather than by prompt: there is no step at which
 a sentence could acquire a fact the corpus does not contain. It also means the
 whole evaluation runs for `$0.0000` with no key, which is why the CI gate can
@@ -383,6 +384,38 @@ A round trip to any hosted vector store is 20–50 ms of network before it does
 any work, and an HNSW index would be approximate where this is exact. It would
 cost money and latency for worse recall.
 
+### Does the embedding model earn its place?
+
+The semantic half of retrieval can be character n-gram hashing (free, offline,
+semantically blind) or a real embedding model — `BAAI/bge-small-en-v1.5`, local,
+needing no new dependency because `sentence-transformers` is already installed
+for the cross-encoder. `python -m eval.runner --compare-embedder`, 87 questions:
+
+| | recall@1 | recall@5 | MRR | routing | added startup |
+|---|---|---|---|---|---|
+| hashing + no reranker | 0.596 | 0.830 | 0.698 | 0.713 | — |
+| model + no reranker | **0.681** | 0.894 | 0.760 | 0.678 | +5.7 s |
+| hashing + cross-encoder | 0.681 | 0.894 | 0.764 | **0.885** | +7.9 s |
+| **model + cross-encoder** | 0.681 | **0.936** | **0.780** | **0.885** | +13.6 s |
+
+**The interesting result is the row that does not move.** On its own the model is
+a large win — recall@1 0.596 → 0.681, and it bridges paraphrases hashing cannot
+("how long can my staff work in a day" against "what are the working hours for
+employees"). But once the cross-encoder is in front of it, recall@1 is *identical*
+either way: the cross-encoder was already recovering what the weak embedder
+missed, because BM25 got the right span into the 20-candidate pool often enough
+for reranking to find it. What remains is recall@5 +0.042 and MRR +0.016, with
+routing accuracy unchanged to three decimals.
+
+So it ships as the default when installed — there is no regression and 0.936 is
+the best measured recall@5 — but it is a much smaller win than it looks like in
+isolation, and it costs about six seconds of startup. `--embedder hashing` turns
+it off. This is the same test the reranker had to pass; the reranker passed it
+more convincingly.
+
+There is still no generative model anywhere. This changes which spans are
+*found*, never what is said about them.
+
 ### Fixing the refusal gate
 
 The gate originally measured IDF-weighted vocabulary overlap, and a rephrasing
@@ -480,8 +513,8 @@ ships two refusal gates. `$0.0000` per answer either way — neither calls an AP
 | | lexical gate | **cross-encoder gate** (default when installed) |
 |---|---|---|
 | recall@1 (n=47) | 0.596 | **0.681** |
-| recall@5 | 0.809 | **0.894** |
-| MRR | 0.679 | **0.764** |
+| recall@5 | 0.830 | **0.936** |
+| MRR | 0.698 | **0.780** |
 | routing overall (n=87) | 0.713 | **0.885** |
 | grounded | 0.851 | **0.979** |
 | clarify | 1.000 | 1.000 |
@@ -710,7 +743,7 @@ truth in [PRODUCT.md](PRODUCT.md).
 | Ingestion, 16 sources, 499 spans | ✅ measured |
 | Freshness ledger + weekly CI job | ✅ built; no upstream change observed yet |
 | Hybrid retrieval | ✅ measured |
-| Cross-encoder reranking | ✅ measured (opt-in) |
+| Cross-encoder reranking + embedding model | ✅ measured (opt-in extra) |
 | Router, clarify, judgement guard | ✅ measured |
 | State law: Delhi scoped, others refused | ✅ measured (Delhi only) |
 | Refusal gate (lexical + cross-encoder) | ✅ measured, both baselines gated |
@@ -724,7 +757,7 @@ truth in [PRODUCT.md](PRODUCT.md).
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-177 tests · `ruff` · `mypy --strict`
+186 tests · `ruff` · `mypy --strict`
 
 ## Licence
 

@@ -13,6 +13,7 @@ import sys
 import textwrap
 
 from agent.answerer import Answerer, build_answerer
+from agent.retrieval.embedder import load_embedder
 from agent.retrieval.rerank import load_reranker
 from agent.schema import Answer, AnswerKind, AuthorityTier, EntityType, SpanStatus
 
@@ -145,7 +146,7 @@ def main() -> int:
         return 0
 
     try:
-        answerer = build_answerer(load_reranker(args.reranker))
+        answerer = build_answerer(load_reranker(args.reranker), load_embedder(args.embedder))
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

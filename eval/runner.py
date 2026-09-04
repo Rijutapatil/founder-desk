@@ -7,6 +7,7 @@ import sys
 from dataclasses import dataclass, field
 
 from agent.answerer import Answerer, build_answerer
+from agent.retrieval.embedder import load_embedder
 from agent.retrieval.rerank import Reranker, load_reranker
 from agent.router import route
 from agent.schema import AnswerKind
@@ -99,6 +100,10 @@ def sweep_coverage(examples: list[Example], reranker: Reranker | None = None) ->
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reranker", default="auto", choices=("auto", "identity", "cross-encoder"))
+    parser.add_argument("--embedder", default="auto", choices=("auto", "hashing", "model"))
+    parser.add_argument(
+        "--compare-embedder", action="store_true", help="hashing vs model, reranker held fixed"
+    )
     parser.add_argument("--compare-rerank", action="store_true", help="identity vs cross-encoder")
     parser.add_argument("--sweep", action="store_true", help="sweep the refusal threshold")
     parser.add_argument("--misses", action="store_true", help="list retrieval misses")
@@ -122,8 +127,16 @@ def main() -> int:
             print(report.summary())
         return 0
 
+    if args.compare_embedder:
+        for name in ("hashing", "model"):
+            answerer = build_answerer(load_reranker(args.reranker), load_embedder(name))
+            report = evaluate(answerer, examples, system=f"{name} + {args.reranker}")
+            print("\n" + "=" * 62)
+            print(report.summary())
+        return 0
+
     reranker = load_reranker(args.reranker)
-    answerer = build_answerer(reranker)
+    answerer = build_answerer(reranker, load_embedder(args.embedder))
     gate = "relevance" if reranker.name.startswith("cross-encoder") else "coverage"
     report = evaluate(answerer, examples, system=f"{reranker.name} gate={gate}")
     print(report.summary())

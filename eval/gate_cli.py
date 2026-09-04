@@ -31,7 +31,8 @@ import sys
 from pathlib import Path
 
 from agent.answerer import build_answerer
-from agent.retrieval.rerank import load_reranker
+from agent.retrieval.embedder import HashingEmbedder, SentenceTransformerEmbedder
+from agent.retrieval.rerank import CrossEncoderReranker, IdentityReranker
 from agent.router import route
 from eval.dataset import load_examples
 from eval.gate import DEFAULT_BASELINE, compare_to_baseline, load_baseline, snapshot, write_baseline
@@ -60,8 +61,15 @@ def main() -> int:
         return 0
 
     examples = load_examples()
+    # The two systems are pinned end to end, embedder included. Letting the
+    # free gate pick "best available" would measure a torch-backed system on a
+    # laptop and a hashing one in CI, under the same baseline file - so a real
+    # regression could hide behind the difference between the two machines.
     try:
-        answerer = build_answerer(load_reranker(args.reranker))
+        if args.reranker == "identity":
+            answerer = build_answerer(IdentityReranker(), HashingEmbedder())
+        else:
+            answerer = build_answerer(CrossEncoderReranker(), SentenceTransformerEmbedder())
     except ImportError as exc:
         print(f"cannot run the {args.reranker} gate: {exc}")
         return 0

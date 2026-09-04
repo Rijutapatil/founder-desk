@@ -4,8 +4,8 @@
   "cost_per_answer": 0.0,
   "retrieval": {
     "recall@1": 0.6808510638297872,
-    "recall@5": 0.8936170212765957,
-    "mrr": 0.7638297872340425
+    "recall@5": 0.9361702127659575,
+    "mrr": 0.7797872340425531
   },
   "routing": {
     "overall": 0.8850574712643678,
@@ -16,6 +16,6 @@
     "faithful": 1.0,
     "fabricated": 0.0,
     "unofficial": 0.0,
-    "n_citations": 85
+    "n_citations": 87
   }
 }

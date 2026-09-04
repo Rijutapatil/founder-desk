@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from agent.retrieval.embedder import Embedder
 from agent.retrieval.rerank import IdentityReranker, Reranker
 from agent.retrieval.store import ScoredSpan, SpanStore
 from agent.router import Routing, route
@@ -373,7 +374,7 @@ class Answerer:
         )
 
 
-def build_answerer(reranker: Reranker | None = None) -> Answerer:
+def build_answerer(reranker: Reranker | None = None, embedder: Embedder | None = None) -> Answerer:
     """Assemble from the built corpus on disk.
 
     With no reranker named, the best available one is used: the cross-encoder if
@@ -382,6 +383,7 @@ def build_answerer(reranker: Reranker | None = None) -> Answerer:
     tell "the corpus does not cover this" from "these words appear nearby", and
     in a compliance tool that distinction matters more than ordering does.
     """
+    from agent.retrieval.embedder import best_available_embedder
     from agent.retrieval.rerank import best_available_reranker
     from agent.retrieval.store import build_store
     from ingest.build_corpus import load_spans
@@ -390,8 +392,9 @@ def build_answerer(reranker: Reranker | None = None) -> Answerer:
     spans = load_spans()
     if not spans:
         raise RuntimeError("no corpus on disk - run: python -m ingest.build_corpus")
+    chosen: Embedder = embedder if embedder is not None else best_available_embedder()
     return Answerer(
-        build_store(spans),
+        build_store(spans, chosen),
         load_allowlist(),
         reranker=reranker if reranker is not None else best_available_reranker(),
     )
