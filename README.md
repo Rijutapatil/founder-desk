@@ -28,6 +28,39 @@ to answer without quoting a primary source, and knows when its source went out o
 date.** Both halves are load-bearing, and both are enforced in code rather than
 requested in a prompt.
 
+## Why not just ask ChatGPT or Claude?
+
+Because a general assistant answers. That is what it is for, and it is why they
+are so useful — but a compliance question you cannot verify is worse than no
+answer, because you will act on it.
+
+Here, **refusing correctly is the feature.** Everything below is a mechanism in
+this repository and a number from [`eval/baseline_metrics_reranked.json`](eval/baseline_metrics_reranked.json)
+over 94 questions. Nothing is claimed that cannot be pointed at.
+
+| | A general assistant | founder-desk | Where to check |
+|---|---|---|---|
+| When it doesn't know | Answers anyway | Refuses, and names what it searched | refusal **0.593** · over-refusal 0.036 |
+| Where the answer came from | Training data; unattributable | One of 25 allowlisted sources, quoted word for word | [`sources/sources.yaml`](sources/sources.yaml) |
+| Can you check it | No | Publisher, authority tier, URL and fetch date on every claim | `CitedSpan` in [`agent/schema.py`](agent/schema.py) |
+| Is it current | Training cutoff; unknowable from the answer | Content-hashed and diffed weekly; stale citations flagged in the answer | [`ingest/watch.py`](ingest/watch.py) |
+| Can it invent a rule | Yes | No — a claim citing nothing raises rather than renders | **fabricated 0.000** over 96 citations |
+| Does it know your state | Generalises across India | Asks which state; refuses if it holds no source for that one | `_state_gap` in [`agent/answerer.py`](agent/answerer.py) |
+| Will it give advice | Often | Never — returns the factors and says to see a CA or CS | `INFORMATIONAL_ONLY` |
+| How often is it right | Cannot tell you | 94 questions, two baselines, gated on every pull request | [`eval/`](docs/evaluation.md) |
+| Where your question goes | To a provider | Nowhere. No model is called; sessions live in memory | no LLM imported anywhere |
+
+The last two rows are the ones that tend to matter in practice. A general
+assistant cannot tell you how often it is right *about Indian compliance
+specifically*, and it cannot promise that the details of your company stayed on
+your laptop.
+
+**The difference is enforcement, not instruction.** Prompting a model to cite
+its sources is a request, and requests degrade quietly. Here, constructing an
+answer whose claim cites nothing raises an exception
+([`agent/schema.py`](agent/schema.py)). Fabrication is not unlikely — it is
+unrepresentable.
+
 ## What an answer looks like
 
 ```
