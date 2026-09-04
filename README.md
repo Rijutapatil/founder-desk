@@ -269,6 +269,63 @@ Maharashtra are not, and the reasons are mechanical rather than editorial — se
 the coverage beneath it, and one that silently omits company setup is worse than
 none at all.
 
+## Roadmap — engineering phases
+
+The same work seen from the code. Where a product phase says *what a founder can
+ask*, this says *what capability the system gains* — and every open one is gated
+by a missing capability rather than by effort.
+
+| # | Capability | Product phase it serves | State |
+|---|---|---|---|
+| E1 | Allowlist with host, licence and refresh validation | all | ✅ |
+| E2 | Cached, rate-limited ingestion; content-hash freshness ledger | all | ✅ |
+| E3 | Hybrid BM25 + vector retrieval, in-memory, 0.38 ms p50 | all | ✅ |
+| E4 | Four-outcome answer contract with grounding enforced by validator | all | ✅ |
+| E5 | Evaluation harness and two committed CI baselines | all | ✅ |
+| E6 | Headless rendering for client-side portals | company setup | ✅ |
+| E7 | Cross-encoder relevance gate for refusals | all | ✅ |
+| E8 | Embedding model behind the same protocol | all | ✅ |
+| E9 | Jurisdiction scoping + stratified retrieval by state | states | ✅ |
+| E10 | Tier-4 external sources, declared and surfaced | PAN | ✅ |
+| E11 | **PDF text extraction in ingestion** | statute depth | ⬜ born-digital only; `pypdf` already a dependency |
+| E12 | **OCR** | Karnataka | ⬜ its Shops Act is scanned images |
+| E13 | **Legacy-font transcoding** | Maharashtra | ⬜ its Rules are non-Unicode Marathi |
+| E14 | **Multilingual embedder and reranker** | in-language answers | ⬜ current pair is English-only |
+| E15 | **Structured entity/deadline model** | the checklist | ⬜ needs facts, not spans |
+
+E11 is the cheapest and unlocks the most: most Indian statute is published as
+PDF, which is why the corpus is 86% departmental guidance rather than law.
+
+## Evaluation criteria
+
+What "working" means, and what each number is accountable for. All of it runs on
+94 questions in [`eval/questions.yaml`](eval/questions.yaml) at `$0.0000`.
+
+| Criterion | Measures | Gate |
+|---|---|---|
+| **recall@1 / recall@5** | Is the right span retrieved at all? The ceiling on everything after it | 0.02 absolute, downward |
+| **MRR** | Where it lands — catches quality sliding from rank 1 to rank 5 | 0.02 absolute, downward |
+| **Routing accuracy** | Did it pick the right *kind* of response, not just a good span | 0.02 absolute, downward |
+| **Refusal accuracy** | Does it decline what the corpus cannot answer | 0.02 absolute, downward |
+| **Over-refusal** | Answerable questions wrongly refused | 0.05, **upward** |
+| **Fabricated citations** | Authority that was never retrieved | **zero tolerance** |
+| **Unofficial citations** | A source not on the allowlist | **zero tolerance** |
+| **External citation rate** | Reliance on declared tier-4 sources | 0.02, **upward** |
+| **Citation faithfulness** | Catches a corpus rotting in place while retrieval looks fine | 0.02 absolute, downward |
+| **Cost per answer** | Buying accuracy with spend should be a decision | 25% ratio |
+
+Three of these are deliberately inverted, and each guards a way of gaming the
+rest: refuse everything and refusal accuracy hits 1.000; lean on easier
+non-government sources and coverage looks better; let the corpus go stale and
+retrieval numbers never move while every citation quietly stops being vouched
+for.
+
+**Reading the set honestly.** 94 questions is small — three misses move
+recall@5 by a point. The refusal half is deliberately adversarial: 14 of the 27
+are rephrasings that defeated an earlier gate, or questions inside a covered
+topic the corpus does not answer. Every answerable question is a hand-written
+paraphrase, never the source's own wording, and a test enforces that.
+
 ## The corpus
 
 689 spans, 393,865 characters, from 24 of 41 allowlisted sources.
