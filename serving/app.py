@@ -23,6 +23,7 @@ from pathlib import Path
 
 import structlog
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -102,6 +103,30 @@ class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=500)
     state: str | None = Field(default=None, description="ISO 3166-2:IN code, e.g. MH")
     entity: EntityType | None = None
+
+
+# Cross-origin access, off unless asked for.
+#
+# A UI served from another origin - a Next.js app on :3000 against this on :8123
+# - cannot call the API at all without this, and the browser's error says
+# nothing useful about why. It is opt-in rather than open by default because
+# this service is meant to run locally and answer for one person: a default of
+# "*" would mean any page the user visits could quietly query their session.
+#
+#     FOUNDER_DESK_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+def cors_origins() -> list[str]:
+    raw = os.environ.get("FOUNDER_DESK_CORS_ORIGINS", "")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+_origins = cors_origins()
+if _origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_origins,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"],
+    )
 
 
 if STATIC_DIR.exists():

@@ -105,3 +105,33 @@ class TestChat:
         response = client.get("/")
         assert response.status_code == 200
         assert "founder-desk" in response.text
+
+
+class TestCors:
+    """Cross-origin access: off by default, exact origins when asked for.
+
+    A UI on another origin cannot call this at all without it, and the browser's
+    console error does not explain why - so it is worth pinning both that it
+    works when configured and that it stays shut when not.
+    """
+
+    def test_no_cors_headers_without_configuration(self, monkeypatch) -> None:
+        from serving.app import cors_origins
+
+        monkeypatch.delenv("FOUNDER_DESK_CORS_ORIGINS", raising=False)
+        assert cors_origins() == []
+
+    def test_origins_are_parsed_from_the_environment(self, monkeypatch) -> None:
+        from serving.app import cors_origins
+
+        monkeypatch.setenv(
+            "FOUNDER_DESK_CORS_ORIGINS", "http://localhost:3000, http://127.0.0.1:3000 "
+        )
+        assert cors_origins() == ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    def test_a_blank_setting_is_not_a_wildcard(self, monkeypatch) -> None:
+        """The failure that would matter: an empty value read as "allow everything"."""
+        from serving.app import cors_origins
+
+        monkeypatch.setenv("FOUNDER_DESK_CORS_ORIGINS", "  , ,")
+        assert cors_origins() == []
