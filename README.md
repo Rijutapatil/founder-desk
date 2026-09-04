@@ -61,6 +61,32 @@ answer whose claim cites nothing raises an exception
 ([`agent/schema.py`](agent/schema.py)). Fabrication is not unlikely — it is
 unrepresentable.
 
+### Where a general assistant is the better tool
+
+This section would be worth nothing if it only listed advantages — that is
+precisely the kind of one-sided, unsourced content this project exists as an
+alternative to. So, plainly:
+
+- **Breadth.** ChatGPT and Claude will attempt any question you have. This
+  covers six domains of first-year compliance across three states and refuses
+  everything else, including questions a founder legitimately needs answered.
+- **Fluency.** They compose an answer for you. This quotes, so replies read like
+  a government FAQ — because they are one.
+- **Nothing to set up.** A browser tab against a clone, a corpus build and a
+  2 GB optional download.
+- **They improve without you.** This improves when someone adds a source.
+
+And the two weakest numbers here, stated in the same breath as the strong ones:
+refusal accuracy is **0.593**, the lowest figure in the
+project — roughly two in five questions that should be declined still get an
+answer. And 85% of the corpus is departmental guidance rather than
+statute, so most answers quote what a department *says about* the law rather
+than the law itself.
+
+The honest summary: if you want an answer to anything, ask a general assistant.
+If you want to know whether an answer is checkable, and to be told plainly when
+it is not, that is the thing this does that they do not.
+
 ## What an answer looks like
 
 ```
