@@ -220,6 +220,50 @@ sources:
     fetch_status: blocked
     notes: "Returns HTTP 403 to non-browser clients (checked 2026-09-04)."
 
+  # ------------------------------------------------ STATE LAW (Delhi, NCT)
+  #
+  # The first state-scoped sources. They matter out of proportion to their size:
+  # Shops & Establishments is state law, so until one of these existed the system
+  # would ask "which state?", receive an answer, and then quote a central Act -
+  # labelling the result with a state that had played no part in it.
+  #
+  # `states: [DL]` is what keeps them honest in both directions. A span scoped to
+  # a state is invisible to every question that is not about that state, so
+  # unlike the excluded NSWS pages these cannot leak into unrelated answers.
+
+  - id: delhi-shops-act
+    publisher: Labour Department, Government of NCT of Delhi
+    title: Delhi Shops and Establishments Act, 1954
+    url: https://labour.delhi.gov.in/labour/acts-and-rules/delhi-shops-establishments-act-1954
+    authority_tier: 1
+    domains: [labour]
+    states: [DL]
+    license: "Government of NCT of Delhi website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 365
+
+  - id: delhi-shops-exemptions
+    publisher: Labour Department, Government of NCT of Delhi
+    title: Schedule of exempted establishments under the Shops and Establishments Act, 1954
+    url: https://labour.delhi.gov.in/labour/schedule-exempted-establishments-under-shops-and-estts-act-1954
+    authority_tier: 2
+    domains: [labour]
+    states: [DL]
+    license: "Government of NCT of Delhi website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 180
+
+  - id: delhi-shops-inspectorate
+    publisher: Labour Department, Government of NCT of Delhi
+    title: Shops and Establishments Inspectorate - registration and procedure
+    url: https://labour.delhi.gov.in/labour/inspectorate
+    authority_tier: 3
+    domains: [labour]
+    states: [DL]
+    license: "Government of NCT of Delhi website content; terms not yet read in full"
+    license_verified: false
+    refresh_days: 90
+
   # ----------------------------- NSWS APPROVAL PAGES: MEASURED AND EXCLUDED
   #
   # The nine entries below were collected, indexed, and then removed on the

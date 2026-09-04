@@ -246,12 +246,12 @@ implying diligence that has not happened.
 
 ## The corpus
 
-499 spans, 238,854 characters, from 16 of 21 allowlisted sources.
+529 spans, 257,240 characters, from 19 of 33 allowlisted sources.
 
 | domain | spans | note |
 |---|---|---|
 | gst | 320 | CBIC FAQs + GST portal help |
-| labour | 141 | EPF & MP Act 1952, EPFO FAQs, ESI Acts, contract labour |
+| labour | 171 | EPF & MP Act 1952, EPFO FAQs, ESI Acts, contract labour, **Delhi Shops & Establishments** |
 | startup_india | 35 | DPIIT recognition, self-certification |
 | tax_registration | 3 | Income Tax portal only |
 | banking_fema | 1 | RBI master directions index only |
@@ -454,7 +454,7 @@ actually good at — which is how it ended up being the refusal gate.
 
 ## Evaluation
 
-82 questions in [`eval/questions.yaml`](eval/questions.yaml): 44 answerable, 26
+87 questions in [`eval/questions.yaml`](eval/questions.yaml): 47 answerable, 28
 that must be refused, 7 that must ask for a state, 5 that must decline to
 recommend.
 
@@ -479,15 +479,15 @@ ships two refusal gates. `$0.0000` per answer either way — neither calls an AP
 
 | | lexical gate | **cross-encoder gate** (default when installed) |
 |---|---|---|
-| recall@1 (n=44) | 0.636 | **0.727** |
-| recall@5 | 0.864 | **0.932** |
-| MRR | 0.734 | **0.805** |
-| routing overall (n=82) | 0.732 | **0.878** |
-| grounded | 0.864 | **0.977** |
+| recall@1 (n=47) | 0.596 | **0.681** |
+| recall@5 | 0.809 | **0.894** |
+| MRR | 0.679 | **0.764** |
+| routing overall (n=87) | 0.713 | **0.885** |
+| grounded | 0.851 | **0.979** |
 | clarify | 1.000 | 1.000 |
 | informational_only | 1.000 | 1.000 |
-| refused | 0.385 | **0.654** |
-| over-refusal | 0.136 | **0.023** |
+| refused | 0.357 | **0.679** |
+| over-refusal | 0.149 | **0.021** |
 
 | citation faithfulness | |
 |---|---|
@@ -504,9 +504,9 @@ written too late.
 
 ### Reading these numbers honestly
 
-- **82 questions is small.** Recall@5 of 0.932 means three misses. Treat the
+- **87 questions is small.** Recall@5 of 0.894 means five misses. Treat the
   third decimal as noise.
-- **Refusal accuracy is 0.654, still the weakest number here**, and it is
+- **Refusal accuracy is 0.679, still the weakest number here**, and it is
   reported next to over-refusal on purpose: refusing everything would score
   1.000 on one and destroy the other. The nine questions wrongly answered are
   almost all in-scope-but-uncovered — board size, paid-up capital, name
@@ -541,6 +541,32 @@ network" retrieved a span scoring 0.96. Raw BM25 was the next candidate and also
 fails: 8.5 for an off-topic capital-gains question against 6.9 for an in-scope
 incorporation one. The gate is IDF-weighted query coverage instead, and the two
 rejected signals are kept on every hit for diagnostics.
+
+**A state you collect but cannot use is worse than not asking.** Shops &
+Establishments, professional tax and stamp duty are state law, and the router
+correctly asked "which state is the registered office in?". But **zero of 499
+spans carried a state scope**, so the answer that followed came from a central
+Act and was stamped `state: MH` — advertising a jurisdiction that had played no
+part in it. The state was collected, ignored, and then displayed.
+
+The fix has three parts. Delhi Shops & Establishments is now in the corpus as the
+first state-scoped source (30 spans), so the question can pay off. A state-law
+answer must now be *carried by a state-scoped span* — quoting central law and
+labelling it with a state is refused. And the corpus is asked before the founder
+is: with no coverage for a state, it refuses immediately and names the gap
+(*"state-specific sources held: DL — nothing for MH"*) rather than spending a
+turn on a fact it cannot use.
+
+Scoping is also what makes these sources safe where the NSWS pages were not: a
+span scoped to a state is invisible to every question that is not about that
+state, so it cannot leak.
+
+One more thing was needed to make it work. 30 Delhi spans against 529 is
+arithmetic, not relevance: a single ranked search filled its whole candidate list
+with GST text and the Delhi Act never reached the reranker. Retrieval is now
+stratified by jurisdiction — a covered state's own spans are retrieved as their
+own stratum, effectively all of them, and the cross-encoder chooses from the
+union. That lifted routing 0.874 → 0.885 and halved over-refusal.
 
 **Shallow coverage of a domain is worse than none.** Incorporation had one span,
 so the obvious next move was more incorporation sources. Driving the NSWS filter
@@ -686,6 +712,7 @@ truth in [PRODUCT.md](PRODUCT.md).
 | Hybrid retrieval | ✅ measured |
 | Cross-encoder reranking | ✅ measured (opt-in) |
 | Router, clarify, judgement guard | ✅ measured |
+| State law: Delhi scoped, others refused | ✅ measured (Delhi only) |
 | Refusal gate (lexical + cross-encoder) | ✅ measured, both baselines gated |
 | Chat: terminal REPL + local web UI | ✅ built and exercised in a browser |
 | Evaluation + CI gate | ✅ measured |
@@ -697,7 +724,7 @@ truth in [PRODUCT.md](PRODUCT.md).
 Every number in this README comes from a command in it. Nothing model-backed has
 been run, and nothing in the measured path needs it.
 
-168 tests · `ruff` · `mypy --strict`
+177 tests · `ruff` · `mypy --strict`
 
 ## Licence
 

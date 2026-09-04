@@ -88,6 +88,11 @@ MIN_RELEVANCE = 0.05
 CANDIDATE_K = 20
 ANSWER_K = 4
 
+# How much of a state's own corpus to put in front of the reranker when the
+# asker's state is one we cover. Large enough to be "effectively all of it" at
+# current corpus size; a cap rather than a limit.
+STATE_STRATUM_K = 64
+
 
 def _answer_text(span: SourceSpan) -> str:
     """The assertion part of a span.
@@ -120,6 +125,11 @@ class Answerer:
         self.answer_k = answer_k
         self.min_coverage = min_coverage
         self.min_relevance = min_relevance
+        # Which states the corpus can actually speak for. Asking "which state?"
+        # is only worth doing when the answer can change the outcome.
+        self.covered_states: frozenset[str] = frozenset(
+            code for span in store.spans for code in span.states
+        )
 
     # -- helpers ---------------------------------------------------------
 
@@ -134,14 +144,43 @@ class Answerer:
         )
 
     def candidates(self, question: str, routing: Routing) -> list[ScoredSpan]:
-        """First-stage retrieval, before any reranking."""
+        """First-stage retrieval, before any reranking.
+
+        Stratified by jurisdiction when the asker's state is one the corpus
+        covers. A single ranked search does not work here, and the reason is
+        arithmetic rather than relevance: there are 30 Delhi spans against 320
+        GST ones, so a question like "is registration compulsory for a shop in
+        Delhi?" fills its whole candidate list with GST registration text and
+        the Delhi Shops Act never reaches the reranker. Retrieving the state's
+        own spans as a separate stratum guarantees they compete.
+
+        The union is then reranked as usual - this changes what the reranker is
+        allowed to see, never what wins.
+        """
         state = routing.applicability.state
         entity = routing.applicability.entity_type
 
         def applicable(span: SourceSpan) -> bool:
             return span.applies_to(state=state, entity=entity)
 
-        return self.store.search(question, k=self.candidate_k, where=applicable)
+        general = self.store.search(question, k=self.candidate_k, where=applicable)
+        if state is None or state not in self.covered_states:
+            return general
+
+        def state_scoped(span: SourceSpan) -> bool:
+            return bool(span.states) and applicable(span)
+
+        # Deliberately generous: a state's corpus is small (30 spans for Delhi
+        # against 529 overall), so the whole stratum is cheap to retrieve and
+        # cheap to rerank. Taking a top-k of it instead re-creates the problem
+        # one level down - "how long can my staff work in a day?" missed the
+        # stratum's top-10 because the first stage is BM25 plus a hashing
+        # embedder, which is poor at paraphrase. The cross-encoder is the part
+        # that reads well, so the job of this stage is to put the candidates in
+        # front of it, not to pre-judge them.
+        local = self.store.search(question, k=STATE_STRATUM_K, where=state_scoped)
+        seen = {hit.span.span_id for hit in local}
+        return local + [hit for hit in general if hit.span.span_id not in seen]
 
     def retrieve(self, question: str, routing: Routing) -> list[ScoredSpan]:
         return self.reranker.rerank(question, self.candidates(question, routing), k=self.answer_k)
@@ -220,14 +259,11 @@ class Answerer:
 
         if routing.is_judgement:
             return self._informational(question, routing, moment)
-        if routing.missing_state:
-            return Answer(
-                kind=AnswerKind.CLARIFY,
-                question=question,
-                applies_to=routing.applicability,
-                clarifying_question=routing.clarifying_question(),
-                as_of=moment,
-            )
+
+        if routing.needs_state:
+            refusal = self._state_gap(question, routing, moment)
+            if refusal is not None:
+                return refusal
 
         candidates = self.candidates(question, routing)
         ranked = self.reranker.rerank(question, candidates, k=self.answer_k)
@@ -241,6 +277,14 @@ class Answerer:
                 as_of=moment,
             )
 
+        # A state-law question must be answered by a state-scoped source, not
+        # merely stamped with a state. Before this check the system would ask
+        # "which state is the registered office in?", take "Maharashtra", quote
+        # the central Contract Labour Act, and label the result `state: MH` -
+        # implying a jurisdiction that had played no part in the answer.
+        if routing.needs_state and not any(h.span.states for h in strong):
+            return self._no_state_source(question, routing, moment)
+
         cited = [self._cite(h, moment) for h in strong]
         return Answer(
             kind=AnswerKind.GROUNDED,
@@ -250,6 +294,53 @@ class Answerer:
                 Claim(text=_answer_text(h.span), supported_by=(h.span.span_id,)) for h in strong
             ),
             cited_spans=tuple(cited),
+            as_of=moment,
+        )
+
+    def _state_gap(self, question: str, routing: Routing, moment: datetime) -> Answer | None:
+        """Handle a state-law question before spending a turn on it.
+
+        Three cases, and only the first is worth a clarifying question:
+
+        * the state is unknown *and* the corpus covers some states - ask, and
+          say which ones, so the reply is worth typing;
+        * the state is unknown and the corpus covers none - refuse now rather
+          than asking for a fact that cannot change the answer;
+        * the state is known and not covered - refuse, naming it.
+        """
+        state = routing.applicability.state
+        if not self.covered_states:
+            return self._no_state_source(question, routing, moment)
+        if state is None:
+            covered = ", ".join(sorted(self.covered_states))
+            return Answer(
+                kind=AnswerKind.CLARIFY,
+                question=question,
+                applies_to=routing.applicability,
+                clarifying_question=(
+                    f"{routing.clarifying_question()} "
+                    f"(I have state-specific sources for: {covered}.)"
+                ),
+                as_of=moment,
+            )
+        if state not in self.covered_states:
+            return self._no_state_source(question, routing, moment)
+        return None
+
+    def _no_state_source(self, question: str, routing: Routing, moment: datetime) -> Answer:
+        """Refuse a state-law question the corpus cannot speak to for that state."""
+        state = routing.applicability.state
+        covered = ", ".join(sorted(self.covered_states)) if self.covered_states else "no state"
+        searched = (
+            f"state-specific sources held: {covered}"
+            + (f" - nothing for {state}" if state else ""),
+            *self._searched(),
+        )
+        return Answer(
+            kind=AnswerKind.REFUSED,
+            question=question,
+            applies_to=routing.applicability,
+            searched=searched,
             as_of=moment,
         )
 

@@ -1,21 +1,21 @@
 {
   "system": "nearest-faq+cross-encoder",
-  "n": 82,
+  "n": 87,
   "cost_per_answer": 0.0,
   "retrieval": {
-    "recall@1": 0.7272727272727273,
-    "recall@5": 0.9318181818181818,
-    "mrr": 0.8045454545454546
+    "recall@1": 0.6808510638297872,
+    "recall@5": 0.8936170212765957,
+    "mrr": 0.7638297872340425
   },
   "routing": {
-    "overall": 0.8780487804878049,
-    "over_refusal": 0.022727272727272728,
-    "refused": 0.6538461538461539
+    "overall": 0.8850574712643678,
+    "over_refusal": 0.02127659574468085,
+    "refused": 0.6785714285714286
   },
   "grounding": {
     "faithful": 1.0,
     "fabricated": 0.0,
     "unofficial": 0.0,
-    "n_citations": 82
+    "n_citations": 85
   }
 }

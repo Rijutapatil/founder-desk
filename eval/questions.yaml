@@ -158,6 +158,18 @@ grounded:
     source: nsws-contract-labour
     anchor: "Section 36 of the Act"
 
+  # ---- State law (Delhi). These must be answered from a Delhi-scoped span,
+  # not from a central Act that happens to share vocabulary.
+  - q: "Is registration compulsory for a shop in Delhi?"
+    source: delhi-shops-inspectorate
+    anchor: "Registration is mandatory under the Act"
+  - q: "How long can my staff in Delhi be made to work in a day?"
+    source: delhi-shops-inspectorate
+    anchor: "not more than nine hours on any day"
+  - q: "Which part of Delhi does the shops and establishments law cover?"
+    source: delhi-shops-inspectorate
+    anchor: "whole of the National Capital Territory of Delhi"
+
 refused:
   # In scope for the project, not covered by the corpus - MCA blocks collection.
   - q: "By when must I file INC-20A after incorporation?"
@@ -191,6 +203,10 @@ refused:
   - q: "what documents make up the MOA and AOA of a company"
   - q: "which software should a startup use to manage its customers"
   - q: "what visa does a foreign director need to visit India"
+  # State law for a state the corpus does not hold. It must refuse and name the
+  # gap, not answer from a central Act and stamp the result with the state.
+  - q: "do I need shops and establishment registration in Maharashtra"
+  - q: "what are the working hours rules for shops in Karnataka"
 
 clarify:
   - q: "Do I need shops and establishment registration?"
