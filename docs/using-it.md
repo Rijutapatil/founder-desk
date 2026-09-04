@@ -148,7 +148,7 @@ writing your own.
 from agent.answerer import build_answerer
 from agent.conversation import Conversation
 
-chat = Conversation(build_answerer())      # loads the corpus once, ~10s with models
+chat = Conversation(build_answerer())  # loads the corpus once, ~10s with models
 turn = chat.ask("do I need shops and establishment registration")
 print(turn.answer.kind, turn.answer.clarifying_question)
 print(chat.ask("Telangana").answer.claims[0].text)
