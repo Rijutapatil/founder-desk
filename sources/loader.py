@@ -133,6 +133,13 @@ class SourceEntry(BaseModel):
         description="Further URLs under this entry - e.g. the PDFs a landing page links to.",
     )
     notes: str = ""
+    external_justification: str = Field(
+        default="",
+        description=(
+            "Required for tier 4. Who publishes this and what relationship they have "
+            "to the process it describes."
+        ),
+    )
 
     @model_validator(mode="after")
     def _ca_bundle_must_exist(self) -> SourceEntry:
@@ -142,6 +149,24 @@ class SourceEntry(BaseModel):
 
     @model_validator(mode="after")
     def _must_be_official(self) -> SourceEntry:
+        """Non-government hosts are admissible only as a declared exception.
+
+        The rule is not "official hosts only" any more - it is that leaving an
+        official host is a decision someone made in writing. A source off a
+        government domain must be tier 4 *and* must say, in this file, why it
+        belongs: which body it is and what relationship it has to the process.
+        A professional firm writing about a subject has no such relationship,
+        so there is nothing it could put in that field.
+        """
+        if self.authority_tier is AuthorityTier.EXTERNAL:
+            if not self.external_justification.strip():
+                raise ValueError(
+                    f"{self.id}: an external source must state why it is admitted "
+                    "in `external_justification` - who publishes it and what "
+                    "relationship they have to the process."
+                )
+            return self
+
         for candidate in (self.url, *self.url_prefixes):
             host = (urlparse(candidate).hostname or "").lower()
             if not host:
@@ -150,7 +175,8 @@ class SourceEntry(BaseModel):
                 raise ValueError(
                     f"{self.id}: {host!r} is not an official government host. "
                     f"Allowed suffixes: {', '.join(OFFICIAL_HOST_SUFFIXES)}. "
-                    "Commentary, news and professional-firm content are out of scope by design."
+                    "Set authority_tier: 4 and fill external_justification to admit it "
+                    "deliberately; commentary and professional-firm content still do not qualify."
                 )
         return self
 
@@ -226,6 +252,10 @@ class Allowlist:
         except NotAllowlisted:
             return False
         return True
+
+    def external(self) -> list[SourceEntry]:
+        """Sources that are not government publications. Reported, never hidden."""
+        return [e for e in self._entries if e.authority_tier is AuthorityTier.EXTERNAL]
 
     def by_domain(self, domain: Domain) -> list[SourceEntry]:
         return [e for e in self._entries if domain in e.domains]

@@ -63,6 +63,20 @@ class AuthorityTier(IntEnum):
     """Official guidance - portal FAQs, MCA/DPIIT/EPFO help pages. Authoritative
     as to the department's own position, but not law."""
 
+    EXTERNAL = 4
+    """**Not a government publication.**
+
+    Admitted only where the government publishes nothing usable on a subject a
+    founder genuinely needs, and only for bodies with a real relationship to the
+    process - an agency the department authorised to run it, not a firm writing
+    about it. Every entry states that relationship in its own words.
+
+    This tier is deliberately conspicuous rather than convenient. An answer that
+    rests on it says so, in the answer, every time: the project's whole claim is
+    that a quote can be traced to an authority, and an external source is a
+    weaker link in that chain even when the content is correct and current.
+    """
+
 
 class Domain(StrEnum):
     """The first-year compliance areas in scope for v1."""
@@ -327,6 +341,16 @@ class Answer(BaseModel):
     @property
     def has_stale_citation(self) -> bool:
         return any(s.status is not SpanStatus.CURRENT for s in self.cited_spans)
+
+    @property
+    def external_sources(self) -> tuple[CitedSpan, ...]:
+        """Cited spans that are not government publications.
+
+        Every surface that renders an answer checks this and says so. Silence
+        here would be the one place the project's central claim could quietly
+        stop being true.
+        """
+        return tuple(s for s in self.cited_spans if s.authority_tier is AuthorityTier.EXTERNAL)
 
     @model_validator(mode="after")
     def _enforce_grounding(self) -> Answer:

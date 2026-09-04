@@ -76,6 +76,31 @@ def test_unknown_url_is_refused_loudly(allowlist) -> None:
     assert allowlist.allows("https://cbic-gst.gov.in/faq.html")
 
 
+class TestExternalSources:
+    """Non-government sources: admissible, but only as a declared exception."""
+
+    def test_a_non_government_host_still_fails_at_an_official_tier(self) -> None:
+        with pytest.raises(ValueError, match="not an official government host"):
+            _entry(url="https://some-ca-firm.com/pan-guide")
+
+    def test_external_tier_requires_a_stated_reason(self) -> None:
+        """The field a professional firm could not honestly fill in."""
+        with pytest.raises(ValueError, match="must state why it is admitted"):
+            _entry(url="https://some-ca-firm.com/pan-guide", authority_tier=AuthorityTier.EXTERNAL)
+
+    def test_external_tier_with_a_reason_is_accepted(self) -> None:
+        entry = _entry(
+            url="https://www.pan.utiitsl.com/PAN/",
+            authority_tier=AuthorityTier.EXTERNAL,
+            external_justification="Authorised by the Income Tax Department to issue PAN.",
+        )
+        assert entry.authority_tier is AuthorityTier.EXTERNAL
+
+    def test_every_shipped_external_source_states_its_reason(self) -> None:
+        for entry in load_allowlist().external():
+            assert entry.external_justification.strip(), f"{entry.id} gives no reason"
+
+
 class TestExcludedSources:
     """Sources kept out on measured evidence, not on inability to fetch."""
 

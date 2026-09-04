@@ -10,6 +10,7 @@ from agent.schema import (
     DISCLAIMER,
     Answer,
     AnswerKind,
+    AuthorityTier,
     CitedSpan,
     Claim,
     SpanStatus,
@@ -87,6 +88,28 @@ def test_a_clarify_must_name_the_missing_fact() -> None:
 def test_an_informational_answer_must_give_factors() -> None:
     with pytest.raises(ValueError, match="must give the factors"):
         Answer(kind=AnswerKind.INFORMATIONAL_ONLY, question="q")
+
+
+def test_an_answer_reports_the_external_sources_it_used() -> None:
+    """Every rendering surface reads this; silence here is how the claim breaks."""
+    external = make_span("ext:1", authority_tier=AuthorityTier.EXTERNAL)
+    answer = Answer(
+        kind=AnswerKind.GROUNDED,
+        question="q",
+        claims=(Claim(text="x", supported_by=("ext:1",)),),
+        cited_spans=(CitedSpan.of(external),),
+    )
+    assert len(answer.external_sources) == 1
+
+
+def test_an_answer_from_official_sources_reports_none() -> None:
+    answer = Answer(
+        kind=AnswerKind.GROUNDED,
+        question="q",
+        claims=(Claim(text="x", supported_by=("src:a",)),),
+        cited_spans=(_cited(),),
+    )
+    assert answer.external_sources == ()
 
 
 def test_span_rejects_unknown_state_codes() -> None:
