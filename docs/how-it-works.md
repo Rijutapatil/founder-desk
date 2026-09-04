@@ -6,6 +6,36 @@
 
 ---
 
+## Which AI framework is this built on?
+
+None. That is a deliberate answer rather than an omission, so here is the whole
+inventory.
+
+**Not used, and not for lack of trying them first:**
+
+| | Why not |
+|---|---|
+| LangChain / LlamaIndex / Haystack | The pipeline is retrieve → gate → quote. Four files, no chains, no agents. A framework here would add indirection over roughly 300 lines of logic and hide the two places that matter — the grounding validator and the refusal gate |
+| A vector database (Pinecone, Weaviate, pgvector, Chroma) | Measured: 692 spans is a 1 MB matrix and exact search takes 0.38 ms. A network round trip to a hosted index costs 20–50 ms *before* doing any work, and an HNSW index would be approximate where this is exact |
+| An LLM API (OpenAI, Anthropic, Gemini) | Nothing generates text. Adding one would make fabrication possible for the first time, and end the $0 evaluation that lets the gate run on every pull request |
+| An embedding API | The embedding model runs locally. Nothing about a question leaves the machine |
+
+**Actually used:**
+
+| | What for |
+|---|---|
+| **BM25** | Lexical retrieval. Hand-written in [`agent/retrieval/store.py`](../agent/retrieval/store.py) — an inverted index and about forty lines of arithmetic |
+| **`BAAI/bge-small-en-v1.5`** | Semantic retrieval. Local, ~130 MB, optional; falls back to character n-gram hashing |
+| **`BAAI/bge-reranker-base`** | Reranking *and* the refusal gate — the same score does both. Local, optional |
+| **`sentence-transformers`** | Loads and runs both of the above. The only ML dependency, and it is an optional extra |
+| **Pydantic** | The output contract. This is where "no claim without a quote" is enforced |
+| **FastAPI** | Serving |
+| **numpy** | The vector matrix |
+
+Both models are **encoders**: they score and rank text, they never write it. So
+the honest one-line answer to "which AI is in it" is *two small ranking models,
+both optional, both local, and no generative model at all.*
+
 ## What AI is in the backend?
 
 **None, by default.** No language model is called, no API key is needed, and
