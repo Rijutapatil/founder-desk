@@ -856,6 +856,86 @@ Other extras: `.[rerank]` for the cross-encoder (**recommended** — it is the
 refusal gate), `.[browser]` plus `playwright install chromium` for the
 client-rendered sources.
 
+## How the pieces connect
+
+Three paths through the code. They share the corpus and nothing else — which is
+why the evaluation can run with no network and the service with no evaluation.
+
+```mermaid
+flowchart TB
+    YAML["sources/sources.yaml<br/><i>the allowlist</i>"]
+    LOADER["sources/loader.py<br/><b>validate</b><br/>host · licence · refresh · tier"]
+    FETCH["ingest/fetch.py<br/><b>collect</b><br/>1 req/s · cached · hashed"]
+    RENDER["ingest/render.py<br/><b>render</b><br/>headless, for client-side pages"]
+    PARSE["ingest/parse.py<br/><b>split</b><br/>FAQ pairs or prose chunks"]
+    BUILD["ingest/build_corpus.py<br/><b>persist</b>"]
+    SPANS[("data/corpus/spans.jsonl<br/><i>529+ spans · committed</i>")]
+    WATCH["ingest/watch.py<br/><b>diff hashes</b>"]
+    FRESH[("sources/freshness.json")]
+
+    YAML --> LOADER --> FETCH
+    FETCH -.->|"render: true"| RENDER --> PARSE
+    FETCH --> PARSE --> BUILD --> SPANS
+    SPANS --> WATCH --> FRESH
+
+    EMB["agent/retrieval/embedder.py<br/><b>embed</b>"]
+    STORE["agent/retrieval/store.py<br/><b>retrieve</b><br/>BM25 + vectors, hybrid"]
+    RERANK["agent/retrieval/rerank.py<br/><b>rerank + gate</b>"]
+    ROUTER["agent/router.py<br/><b>extract facts</b><br/>state · entity · turnover"]
+    ANSWER["agent/answerer.py<br/><b>decide</b><br/>grounded · clarify · informational · refused"]
+    SCHEMA["agent/schema.py<br/><b>enforce</b><br/>no claim without a quote"]
+    CONV["agent/conversation.py<br/><b>hold session</b>"]
+    CLI["serving/cli.py<br/><i>ask · chat · sources</i>"]
+    APP["serving/app.py + static/<br/><i>local web UI</i>"]
+
+    SPANS --> STORE
+    EMB --> STORE --> ANSWER
+    RERANK --> ANSWER
+    ROUTER --> ANSWER
+    ANSWER --> SCHEMA
+    SCHEMA --> CONV
+    CONV --> CLI
+    CONV --> APP
+
+    QS["eval/questions.yaml<br/><i>94 questions</i>"]
+    DS["eval/dataset.py<br/><b>resolve anchors</b>"]
+    RUN["eval/runner.py<br/><b>run + score</b>"]
+    MET["eval/metrics.py"]
+    GND["eval/groundedness.py<br/><b>judge citations</b>"]
+    GATE["eval/gate.py + gate_cli.py<br/><b>compare to baseline</b>"]
+    BASE[("eval/baseline_metrics*.json<br/><i>committed</i>")]
+
+    QS --> DS --> RUN
+    SPANS --> DS
+    ANSWER --> RUN --> MET --> GATE
+    RUN --> GND --> GATE
+    GATE <--> BASE
+```
+
+### What each file takes, does, and returns
+
+| File | In | Action | Out |
+|---|---|---|---|
+| `sources/loader.py` | `sources.yaml` | Reject any source that is off an official host without a declared reason, or missing a licence or refresh window | Validated `Allowlist` |
+| `ingest/fetch.py` | Allowlist entry | GET at 1 req/s, cache, hash the readable text | `FetchResult` + `data/raw/` |
+| `ingest/render.py` | URL + CSS selector | Run the page's own JavaScript; never used on a host that refused us | Rendered text |
+| `ingest/parse.py` | Fetched text | Pair Q&A, or chunk prose; drop navigation chrome | `SourceSpan[]` |
+| `ingest/build_corpus.py` | Allowlist + fetches | Deduplicate by content hash, persist, report coverage | `spans.jsonl` |
+| `ingest/watch.py` | Corpus + live sources | Re-fetch and diff content hashes | `freshness.json` |
+| `agent/retrieval/embedder.py` | Text | Embed (model, or hashing fallback) | Normalised vectors |
+| `agent/retrieval/store.py` | Spans + vectors | Hybrid BM25 + cosine, filtered before scoring | Ranked `ScoredSpan[]` |
+| `agent/retrieval/rerank.py` | Question + candidates | Score jointly; the score also gates refusals | Reordered hits |
+| `agent/router.py` | Question | Extract state, entity, turnover — **null rather than guess** | `Routing` |
+| `agent/answerer.py` | Question + routing | Choose one of four outcomes; require a state-scoped span for state law | `Answer` |
+| `agent/schema.py` | Claims + citations | Refuse to construct a claim with no quote; stamp the disclaimer | Validated `Answer` |
+| `agent/conversation.py` | Message + session | Hold a clarifying question; carry stated facts forward | `Turn` |
+| `serving/cli.py` | Argv | Render plates as text; warn on external or stale sources | stdout |
+| `serving/app.py` | HTTP | Serve `/chat`, `/ask`, `/sources`; sessions in memory only | JSON + the web UI |
+| `eval/dataset.py` | `questions.yaml` + corpus | Resolve each gold label by content anchor; fail loudly if ambiguous | `Example[]` |
+| `eval/runner.py` | Examples + answerer | Run every question, record retrieval and routing | `EvalReport` |
+| `eval/groundedness.py` | Answer + retrieved | Structural verdicts: fabricated, unofficial, stale, external | `GroundednessReport` |
+| `eval/gate.py` | Current + baseline | Fail on regression; fail on *increase* for the three inverted metrics | Exit code |
+
 ## Layout
 
 ```
