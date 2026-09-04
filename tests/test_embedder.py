@@ -72,8 +72,12 @@ class TestSentenceTransformerEmbedder:
         """The whole reason for this class."""
         question = "how long can my staff be made to work in a day"
         spans = [
-            make_span("src:1", "What are the working hours for employees? Not more than nine hours a day."),
-            make_span("src:2", "What is the GST registration threshold? Twenty lakh rupees of turnover."),
+            make_span(
+                "src:1", "What are the working hours for employees? Not more than nine hours a day."
+            ),
+            make_span(
+                "src:2", "What is the GST registration threshold? Twenty lakh rupees of turnover."
+            ),
         ]
         model_top = build_store(spans, embedder).search(question, k=1, alpha=1.0)[0]
         assert model_top.span.span_id == "src:1"
