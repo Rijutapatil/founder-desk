@@ -172,14 +172,12 @@ a notification amended the position and the answer kept quoting the old one,
 confidently and with a real citation.
 
 Every span carries the instrument's date, the fetch date, and a hash of the
-source's readable text. `ingest/watch.py` re-fetches and diffs those hashes;
-changed sources mark their spans `needs_review`, and spans past their source's
-refresh window go `stale` and are flagged in the answer. A weekly CI job runs it.
-
-The hash is taken over *extracted text with whitespace normalised*, not raw
-bytes — government portals stamp build ids and session tokens into their markup,
-so a byte hash would report a change on every fetch and the signal would be
-noise.
+source's readable text. `ingest/watch.py` re-fetches each source, parses it into
+quotable spans, and compares their normalised text against the committed corpus.
+Changes to those spans need review; changes to navigation, visitor counts, and
+other text outside the indexed passages do not trigger the gate. Spans past their
+source's refresh window go `stale` and are flagged in the answer. A weekly CI
+job runs the comparison.
 
 ---
 
